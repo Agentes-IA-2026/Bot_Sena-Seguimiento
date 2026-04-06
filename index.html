@@ -19,7 +19,7 @@
 }
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
-
+ 
 /* NAV */
 nav{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(10,14,26,0.93);backdrop-filter:blur(14px)}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:-0.5px;text-decoration:none;color:var(--text)}
@@ -30,7 +30,7 @@ nav{display:flex;justify-content:space-between;align-items:center;padding:1.2rem
 .nav-cta{background:var(--accent);color:#0A0E1A;padding:0.5rem 1.3rem;border-radius:8px;font-weight:700;font-size:0.88rem;text-decoration:none;transition:box-shadow 0.2s,transform 0.2s}
 .nav-cta:hover{box-shadow:0 4px 16px rgba(79,255,176,0.3);transform:translateY(-1px)}
 @media(max-width:600px){.nav-links{display:none}}
-
+ 
 /* HERO */
 .hero{padding:8rem 6% 5rem;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-180px;left:50%;transform:translateX(-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(79,255,176,0.07) 0%,transparent 70%);pointer-events:none}
@@ -45,19 +45,19 @@ h1 .hl{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-b
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,255,176,0.25)}
 .btn-ghost{border:1px solid var(--border);color:var(--text);padding:0.85rem 2rem;border-radius:10px;font-size:1rem;text-decoration:none;transition:border-color 0.2s}
 .btn-ghost:hover{border-color:rgba(255,255,255,0.25)}
-
+ 
 /* STATS */
 .stats{display:flex;justify-content:center;gap:3rem;padding:3rem 6%;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap}
 .stat{text-align:center}
 .stat-n{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;color:var(--accent)}
 .stat-l{font-size:0.83rem;color:var(--muted);margin-top:2px}
-
+ 
 /* SECTIONS */
 .section{padding:5.5rem 6%}
 .section-label{font-size:0.78rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:0.8rem;font-weight:500}
 h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;letter-spacing:-1px;margin-bottom:0.8rem}
 .section-sub{color:var(--muted);font-size:1rem;max-width:480px;margin-bottom:3.5rem;font-weight:300}
-
+ 
 /* STEPS */
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.5rem}
 .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.8rem;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
@@ -67,7 +67,7 @@ h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:
 .step-icon svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .step h3{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:0.5rem}
 .step p{font-size:0.88rem;color:var(--muted);line-height:1.6}
-
+ 
 /* DEMO */
 .demo-wrap{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;max-width:600px;margin:3rem auto 0}
 .demo-bar{background:#1C2438;padding:0.8rem 1.2rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
@@ -84,7 +84,7 @@ h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:
 .bubble.u{background:rgba(0,201,255,0.08);border:1px solid rgba(0,201,255,0.15);border-radius:12px 4px 12px 12px}
 .chip{display:inline-block;background:rgba(79,255,176,0.1);border:1px solid rgba(79,255,176,0.2);color:var(--accent);border-radius:6px;padding:0.2rem 0.5rem;font-size:0.75rem;margin:2px}
 .chip.red{background:rgba(255,100,100,0.08);border-color:rgba(255,100,100,0.25);color:#ff8888}
-
+ 
 /* FEATURES */
 .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem}
 .feat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
@@ -92,13 +92,13 @@ h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:
 .feat-dot{width:8px;height:8px;background:var(--accent2);border-radius:50%;margin-bottom:1rem}
 .feat h4{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;margin-bottom:0.4rem}
 .feat p{font-size:0.85rem;color:var(--muted);line-height:1.55}
-
+ 
 /* PRECIOS */
 .modelo-nota{background:rgba(79,255,176,0.04);border:1px solid rgba(79,255,176,0.15);border-radius:12px;padding:1rem 1.4rem;max-width:700px;margin:0 auto 2.5rem;display:flex;gap:12px;align-items:flex-start}
 .nota-icon{width:22px;height:22px;background:rgba(79,255,176,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:11px;color:var(--accent);font-weight:700}
 .modelo-nota p{font-size:0.85rem;color:var(--muted);line-height:1.55}
 .modelo-nota p strong{color:var(--text)}
-
+ 
 .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;max-width:900px;margin:0 auto 3rem}
 .plan{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;transition:transform 0.2s}
 .plan:hover{transform:translateY(-4px)}
@@ -134,7 +134,7 @@ h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:
 .plan-btn.outline:hover{border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.04)}
 .plan-btn.solid{background:var(--accent);color:#0A0E1A}
 .plan-btn.solid:hover{box-shadow:0 4px 20px rgba(79,255,176,0.3)}
-
+ 
 /* TOTAL AÑO */
 .total-wrap{max-width:900px;margin:0 auto 1rem}
 .total-title{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:1rem;text-align:center}
@@ -146,7 +146,7 @@ h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:
 .tc.hi .tc-val{color:var(--accent)}
 .tc-sub{font-size:0.72rem;color:var(--muted);margin-top:4px}
 @media(max-width:560px){.total-cards{grid-template-columns:1fr}}
-
+ 
 /* FAQ */
 .faq{max-width:640px;margin:3rem auto 0}
 .faq-item{border-bottom:1px solid var(--border);padding:1.1rem 0;cursor:pointer}
@@ -155,13 +155,13 @@ h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:
 .faq-a{font-size:0.85rem;color:var(--muted);margin-top:0.7rem;line-height:1.65;display:none}
 .faq-item.open .faq-a{display:block}
 .faq-item.open .faq-icon{transform:rotate(45deg)}
-
+ 
 /* CTA FINAL */
 .cta-section{padding:5rem 6%;text-align:center}
 .cta-box{background:linear-gradient(135deg,rgba(79,255,176,0.05),rgba(0,201,255,0.05));border:1px solid rgba(79,255,176,0.15);border-radius:24px;padding:4.5rem 2rem;max-width:640px;margin:0 auto}
 .cta-box h2{margin-bottom:1rem}
 .cta-box p{color:var(--muted);margin-bottom:2rem;font-size:1rem;max-width:420px;margin-left:auto;margin-right:auto}
-
+ 
 /* FOOTER */
 footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .footer-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;text-decoration:none;color:var(--text)}
@@ -170,7 +170,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
 </style>
 </head>
 <body>
-
+ 
 <!-- NAV -->
 <nav>
   <a href="#" class="logo">Guía<span>Bot</span></a>
@@ -181,7 +181,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
   </ul>
   <a href="#precios" class="nav-cta">Quiero probarlo</a>
 </nav>
-
+ 
 <!-- HERO -->
 <section class="hero">
   <div class="badge"><span class="badge-dot"></span>Seguimiento académico automatizado</div>
@@ -192,7 +192,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
     <a href="#como" class="btn-ghost">Ver cómo funciona</a>
   </div>
 </section>
-
+ 
 <!-- STATS -->
 <div class="stats">
   <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Automatizado</div></div>
@@ -200,7 +200,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
   <div class="stat"><div class="stat-n">0</div><div class="stat-l">Planillas manuales</div></div>
   <div class="stat"><div class="stat-n">∞</div><div class="stat-l">Estudiantes soportados</div></div>
 </div>
-
+ 
 <!-- CÓMO FUNCIONA -->
 <section class="section" id="como">
   <div class="section-label">Cómo funciona</div>
@@ -232,7 +232,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
       <p>GuíaBot genera automáticamente quién entregó, quién no, y qué actividades están pendientes.</p>
     </div>
   </div>
-
+ 
   <!-- DEMO CHAT -->
   <div class="demo-wrap">
     <div class="demo-bar">
@@ -263,7 +263,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
     </div>
   </div>
 </section>
-
+ 
 <!-- FUNCIONES -->
 <section class="section" id="funciones" style="background:var(--bg2)">
   <div class="section-label">Funcionalidades</div>
@@ -302,66 +302,28 @@ footer p{font-size:0.82rem;color:var(--muted)}
     </div>
   </div>
 </section>
-
+ 
 <!-- PRECIOS -->
 <section class="section" id="precios">
   <div style="text-align:center">
     <div class="section-label">Inversión</div>
     <h2>Precios claros, sin sorpresas</h2>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto">Paga una vez la instalación y configuración según tu carga académica. Luego solo la mensualidad de uso.</p>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto">Paga una vez la instalación y configuración. Luego solo la mensualidad de uso. Sin contratos forzosos.</p>
   </div>
-
+ 
   <div class="modelo-nota">
     <div class="nota-icon">i</div>
-    <p><strong>¿Cómo funciona el modelo?</strong> Primero pagas la <strong>instalación única</strong> que incluye la configuración completa adaptada a tu carga académica. Luego pagas una <strong>mensualidad</strong> para mantener el servicio activo. Sin contratos forzosos, cancela cuando quieras.</p>
+    <p><strong>¿Cómo funciona el modelo?</strong> Primero pagas la <strong>instalación única</strong> que incluye la configuración completa adaptada a tu carga académica. Luego pagas una <strong>mensualidad</strong> para mantener el servicio activo. Cancela cuando quieras, sin penalizaciones.</p>
   </div>
-
+ 
   <div class="plans">
-
-    <!-- STARTER -->
+ 
+    <!-- ESTÁNDAR -->
     <div class="plan">
       <div class="plan-header">
-        <div class="plan-level">Nivel 01</div>
-        <div class="plan-title">Starter</div>
-        <div class="plan-desc">Para docentes con 1 curso y hasta 5 guías activas</div>
-      </div>
-      <div class="plan-install">
-        <div class="install-label">Instalación única</div>
-        <div class="install-price">
-          <span class="cur">$</span>150.000
-          <span class="once">COP — pago único</span>
-        </div>
-        <div class="install-note">Configuración + despliegue + capacitación</div>
-      </div>
-      <div class="plan-monthly">
-        <div class="monthly-label">Luego mensualmente</div>
-        <div class="monthly-row">
-          <span class="monthly-amount">$29.000</span>
-          <span class="monthly-per">COP / mes</span>
-        </div>
-      </div>
-      <div class="plan-feats">
-        <ul>
-          <li class="on">1 curso activo</li>
-          <li class="on">Hasta 5 guías</li>
-          <li class="on">Hasta 35 estudiantes</li>
-          <li class="on">Reportes básicos</li>
-          <li class="off">Exportar PDF / Excel</li>
-          <li class="off">Historial de entregas</li>
-        </ul>
-      </div>
-      <div class="plan-cta">
-        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Starter%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Starter%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24150.000%20%2B%20%2429.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn outline">Quiero este plan</a>
-      </div>
-    </div>
-
-    <!-- ESTÁNDAR -->
-    <div class="plan featured">
-      <div class="plan-header">
-        <div class="popular-tag">Más elegido</div>
-        <div class="plan-level">Nivel 02</div>
+        <div class="plan-level">Docente</div>
         <div class="plan-title">Estándar</div>
-        <div class="plan-desc">Para docentes con 2 a 4 cursos y hasta 15 guías</div>
+        <div class="plan-desc">Para docentes con 2 a 4 materias o grupos a cargo</div>
       </div>
       <div class="plan-install">
         <div class="install-label">Instalación única</div>
@@ -369,91 +331,132 @@ footer p{font-size:0.82rem;color:var(--muted)}
           <span class="cur">$</span>280.000
           <span class="once">COP — pago único</span>
         </div>
-        <div class="install-note">Configuración completa + personalización básica</div>
+        <div class="install-note">Configuración + despliegue + capacitación</div>
       </div>
       <div class="plan-monthly">
         <div class="monthly-label">Luego mensualmente</div>
         <div class="monthly-row">
-          <span class="monthly-amount">$49.000</span>
+          <span class="monthly-amount">$95.000</span>
           <span class="monthly-per">COP / mes</span>
         </div>
       </div>
       <div class="plan-feats">
         <ul>
-          <li class="on">Hasta 4 cursos activos</li>
-          <li class="on">Hasta 15 guías</li>
+          <li class="on">Hasta 4 materias o grupos</li>
+          <li class="on">Hasta 15 guías activas</li>
           <li class="on">Estudiantes ilimitados</li>
-          <li class="on">Exportar PDF / Excel</li>
-          <li class="on">Historial de entregas</li>
-          <li class="off">Panel administrativo</li>
+          <li class="on">Reportes básicos</li>
+          <li class="on">Soporte por bot 24/7</li>
+          <li class="off">Exportar PDF / Excel</li>
+          <li class="off">Historial de entregas</li>
         </ul>
       </div>
       <div class="plan-cta">
-        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Est%C3%A1ndar%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Est%C3%A1ndar%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24280.000%20%2B%20%2449.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn solid">Quiero este plan →</a>
+        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Est%C3%A1ndar%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Est%C3%A1ndar%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24280.000%20%2B%20%2495.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn outline">Quiero este plan</a>
       </div>
     </div>
-
+ 
     <!-- AVANZADO -->
-    <div class="plan">
+    <div class="plan featured">
       <div class="plan-header">
-        <div class="plan-level">Nivel 03</div>
+        <div class="popular-tag">Más elegido</div>
+        <div class="plan-level">Docente</div>
         <div class="plan-title">Avanzado</div>
-        <div class="plan-desc">Para docentes con 5 o más cursos y carga académica alta</div>
+        <div class="plan-desc">Para docentes con 5 o más materias y carga académica alta</div>
       </div>
       <div class="plan-install">
         <div class="install-label">Instalación única</div>
         <div class="install-price">
-          <span class="cur">$</span>450.000
+          <span class="cur">$</span>420.000
           <span class="once">COP — pago único</span>
         </div>
-        <div class="install-note">Configuración avanzada + personalización completa</div>
+        <div class="install-note">Configuración completa + personalización</div>
       </div>
       <div class="plan-monthly">
         <div class="monthly-label">Luego mensualmente</div>
         <div class="monthly-row">
-          <span class="monthly-amount">$79.000</span>
+          <span class="monthly-amount">$139.000</span>
           <span class="monthly-per">COP / mes</span>
         </div>
       </div>
       <div class="plan-feats">
         <ul>
-          <li class="on">Cursos ilimitados</li>
+          <li class="on">Materias y grupos ilimitados</li>
           <li class="on">Guías ilimitadas</li>
           <li class="on">Estudiantes ilimitados</li>
           <li class="on">Exportar PDF / Excel</li>
-          <li class="on">Historial completo</li>
-          <li class="on">Panel administrativo</li>
+          <li class="on">Historial completo de entregas</li>
+          <li class="on">Dashboard con gráficas</li>
+          <li class="on">Soporte prioritario por bot</li>
         </ul>
       </div>
       <div class="plan-cta">
-        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Avanzado%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Avanzado%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24450.000%20%2B%20%2479.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn outline">Quiero este plan</a>
+        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Avanzado%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Avanzado%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24420.000%20%2B%20%24139.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn solid">Quiero este plan →</a>
       </div>
     </div>
-
+ 
+    <!-- INSTITUCIÓN -->
+    <div class="plan">
+      <div class="plan-header">
+        <div class="plan-level">Institución</div>
+        <div class="plan-title">Colegio / Centro</div>
+        <div class="plan-desc">Para colegios o centros con varios docentes usando GuíaBot</div>
+      </div>
+      <div class="plan-install">
+        <div class="install-label">Instalación única</div>
+        <div class="install-price">
+          <span class="cur">$</span>650.000
+          <span class="once">COP — pago único</span>
+        </div>
+        <div class="install-note">Configuración multi-docente + capacitación grupal</div>
+      </div>
+      <div class="plan-monthly">
+        <div class="monthly-label">Luego mensualmente</div>
+        <div class="monthly-row">
+          <span class="monthly-amount">$219.000</span>
+          <span class="monthly-per">COP / mes</span>
+        </div>
+      </div>
+      <div class="plan-feats">
+        <ul>
+          <li class="on">Hasta 10 docentes incluidos</li>
+          <li class="on">Materias y guías ilimitadas</li>
+          <li class="on">Estudiantes ilimitados</li>
+          <li class="on">Panel administrativo central</li>
+          <li class="on">Exportar PDF / Excel</li>
+          <li class="on">Historial completo</li>
+          <li class="on">Factura electrónica</li>
+        </ul>
+      </div>
+      <div class="plan-cta">
+        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Instituci%C3%B3n%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Instituci%C3%B3n%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24650.000%20%2B%20%24219.000%2Fmes).%0ANombre%20de%20la%20instituci%C3%B3n%3A%20%0AN%C3%BAmero%20de%20docentes%3A%20" class="plan-btn outline">Quiero este plan</a>
+      </div>
+    </div>
+ 
   </div>
-
+ 
   <!-- TOTAL PRIMER AÑO -->
   <div class="total-wrap">
     <div class="total-title">¿Cuánto pago en total el primer año?</div>
     <div class="total-cards">
       <div class="tc">
-        <div class="tc-name">Starter — 1er año</div>
-        <div class="tc-val">$498.000</div>
-        <div class="tc-sub">$150K instalación + 12×$29K</div>
+        <div class="tc-name">Estándar — 1er año</div>
+        <div class="tc-val">$1.420.000</div>
+        <div class="tc-sub">$280K instalación + 12×$95K</div>
       </div>
       <div class="tc hi">
-        <div class="tc-name">Estándar — 1er año</div>
-        <div class="tc-val">$868.000</div>
-        <div class="tc-sub">$280K instalación + 12×$49K</div>
+        <div class="tc-name">Avanzado — 1er año</div>
+        <div class="tc-val">$2.088.000</div>
+        <div class="tc-sub">$420K instalación + 12×$139K</div>
       </div>
       <div class="tc">
-        <div class="tc-name">Avanzado — 1er año</div>
-        <div class="tc-val">$1.398.000</div>
-        <div class="tc-sub">$450K instalación + 12×$79K</div>
+        <div class="tc-name">Institución — 1er año</div>
+        <div class="tc-val">$3.278.000</div>
+        <div class="tc-sub">$650K instalación + 12×$219K</div>
       </div>
     </div>
   </div>
-
+ 
   <!-- FAQ -->
   <div class="faq">
     <div class="faq-item" onclick="this.classList.toggle('open')">
@@ -478,7 +481,7 @@ footer p{font-size:0.82rem;color:var(--muted)}
     </div>
   </div>
 </section>
-
+ 
 <!-- CTA FINAL -->
 <section class="cta-section" id="contacto">
   <div class="cta-box">
@@ -488,13 +491,13 @@ footer p{font-size:0.82rem;color:var(--muted)}
     <a href="mailto:casdu2@gmail.com?subject=Solicitud%20de%20instalaci%C3%B3n%20GuiaBot&body=Hola%2C%20me%20interesa%20instalar%20GuiaBot.%20Mi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20%0AEl%20plan%20que%20me%20interesa%20es%3A%20" class="btn-primary">Solicitar mi instalación →</a>
   </div>
 </section>
-
+ 
 <!-- FOOTER -->
 <footer>
   <a href="#" class="footer-logo">Guía<span>Bot</span></a>
   <p>© 2026 GuíaBot — Automatización académica para docentes</p>
   <p>Hecho con dedicación para quienes enseñan</p>
 </footer>
-
+ 
 </body>
 </html>
