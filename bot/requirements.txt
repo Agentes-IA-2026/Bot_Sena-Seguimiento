@@ -1,0 +1,24 @@
+# GuíaBot — Dependencias versión web
+# Instalar con: pip install -r requirements.txt
+
+# Google APIs (igual que antes)
+google-api-python-client
+google-auth
+google-auth-httplib2
+
+# Lectura de PDFs (igual que antes)
+PyPDF2
+
+# Excel (igual que antes)
+openpyxl
+pandas
+
+# Supabase — base de datos y autenticación
+supabase
+
+# HTTP para descargar PDFs desde Supabase Storage
+httpx
+
+# API web (endpoints para el dashboard)
+fastapi
+uvicorn
