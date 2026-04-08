@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GuíaBot — Iniciar sesión</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0A0E1A;--card:#161D2F;
+  --accent:#4FFFB0;--accent2:#00C9FF;
+  --text:#F0F4FF;--muted:#7B8BAC;
+  --border:rgba(255,255,255,0.07);
+  --danger:#FF6B6B;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;margin-bottom:2.5rem;text-align:center}
+.logo span{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem;width:100%;max-width:400px}
+.card h2{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:0.4rem}
+.card p{font-size:0.88rem;color:var(--muted);margin-bottom:2rem}
+.field{margin-bottom:1.2rem}
+.field label{display:block;font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem;font-weight:500}
+.field input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;border-radius:10px;font-size:0.95rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s}
+.field input:focus{border-color:rgba(79,255,176,0.4)}
+.field input::placeholder{color:var(--muted)}
+.btn{width:100%;background:var(--accent);color:#0A0E1A;padding:0.85rem;border-radius:10px;font-weight:700;font-size:1rem;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:0.5rem}
+.btn:hover{box-shadow:0 4px 20px rgba(79,255,176,0.3);transform:translateY(-1px)}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.error{background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.25);border-radius:10px;padding:0.75rem 1rem;font-size:0.85rem;color:var(--danger);margin-bottom:1rem;display:none}
+.error.show{display:block}
+.footer-link{text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--muted)}
+.footer-link a{color:var(--accent);text-decoration:none}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(10,14,26,0.3);border-top-color:#0A0E1A;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.suspended{background:rgba(255,181,71,0.08);border:1px solid rgba(255,181,71,0.25);border-radius:10px;padding:1rem;font-size:0.85rem;color:#FFB547;text-align:center;display:none}
+.suspended.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="logo">Guía<span>Bot</span></div>
+
+<div class="card">
+  <h2>Bienvenido</h2>
+  <p>Ingresa con tu cuenta para acceder a tu panel de seguimiento.</p>
+
+  <div class="error" id="error-msg"></div>
+  <div class="suspended" id="suspended-msg">
+    Tu acceso está suspendido. Contacta a GuíaBot para reactivarlo:<br>
+    <strong>casdu2@gmail.com</strong>
+  </div>
+
+  <div class="field">
+    <label>Correo electrónico</label>
+    <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email">
+  </div>
+
+  <div class="field">
+    <label>Contraseña</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+  </div>
+
+  <button class="btn" id="btn-login" onclick="login()">Entrar al dashboard</button>
+
+  <div class="footer-link">
+    ¿Olvidaste tu contraseña? <a href="mailto:casdu2@gmail.com?subject=Recuperar clave GuiaBot">Escríbenos</a>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://cfahgjytbpnmsogzryov.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_M1_jbv9C6KC-qOfTgn950Q_AkUW1Bmd';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function mostrarError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function ocultarError() {
+  document.getElementById('error-msg').classList.remove('show');
+  document.getElementById('suspended-msg').classList.remove('show');
+}
+
+function setLoading(loading) {
+  const btn = document.getElementById('btn-login');
+  if (loading) {
+    btn.innerHTML = '<span class="loading"></span>Verificando...';
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = 'Entrar al dashboard';
+    btn.disabled = false;
+  }
+}
+
+async function login() {
+  ocultarError();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!email || !password) {
+    mostrarError('Por favor completa todos los campos.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      if (error.message.includes('Invalid login')) {
+        mostrarError('Correo o contraseña incorrectos.');
+      } else {
+        mostrarError('Error al iniciar sesión. Intenta de nuevo.');
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Verificar si el docente está activo en la tabla docentes
+    const { data: docente, error: errDocente } = await db
+      .from('docentes')
+      .select('activo, nombre, plan')
+      .eq('id', data.user.id)
+      .single();
+
+    if (errDocente || !docente) {
+      mostrarError('No se encontró tu cuenta. Contacta a GuíaBot.');
+      await db.auth.signOut();
+      setLoading(false);
+      return;
+    }
+
+    if (!docente.activo) {
+      document.getElementById('suspended-msg').classList.add('show');
+      await db.auth.signOut();
+      setLoading(false);
+      return;
+    }
+
+    // Todo bien — redirigir al dashboard
+    window.location.href = '/dashboard.html';
+
+  } catch (e) {
+    mostrarError('Error de conexión. Verifica tu internet.');
+    setLoading(false);
+  }
+}
+
+// Enter para iniciar sesión
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+// Si ya hay sesión activa, ir directo al dashboard
+db.auth.getSession().then(({ data }) => {
+  if (data.session) {
+    window.location.href = '/dashboard.html';
+  }
+});
+</script>
+</body>
+</html>
