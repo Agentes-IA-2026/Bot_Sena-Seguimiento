@@ -3,607 +3,1282 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GuíaBot — Dashboard Docente</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<!-- Supabase JS SDK -->
+<title>GuíaBot — Panel de Seguimiento</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0A0E1A;--bg2:#111827;--card:#161D2F;--card2:#1C2438;
-  --accent:#4FFFB0;--accent2:#00C9FF;--warn:#FFB547;--danger:#FF6B6B;
-  --text:#F0F4FF;--muted:#7B8BAC;--border:rgba(255,255,255,0.07);
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #080B14;
+  --surface: #0D1117;
+  --card: #111827;
+  --card2: #1a2235;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+  --green: #00F5A0;
+  --green2: #00D98B;
+  --blue: #3B82F6;
+  --purple: #8B5CF6;
+  --amber: #F59E0B;
+  --red: #EF4444;
+  --text: #F1F5F9;
+  --text2: #94A3B8;
+  --text3: #475569;
+  --font: 'Space Grotesk', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --radius2: 8px;
+  --sidebar: 240px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;display:flex;min-height:100vh}
 
-/* SIDEBAR */
-.sidebar{width:220px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0;position:fixed;top:0;left:0;height:100vh;z-index:50}
-.sidebar-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;padding:0 1.5rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1rem}
-.sidebar-logo span{color:var(--accent)}
-.nav-item{display:flex;align-items:center;gap:10px;padding:0.6rem 1.5rem;font-size:0.88rem;color:var(--muted);cursor:pointer;transition:all 0.2s;border-left:2px solid transparent;text-decoration:none}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
-.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,255,176,0.05)}
-.nav-item svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.sidebar-footer{margin-top:auto;padding:1rem 1.5rem;border-top:1px solid var(--border)}
-.user-info{display:flex;align-items:center;gap:10px}
-.avatar{width:34px;height:34px;border-radius:50%;background:rgba(79,255,176,0.15);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--accent);flex-shrink:0}
-.user-name{font-size:0.82rem;font-weight:500}
-.user-plan{font-size:0.72rem;color:var(--muted)}
+html { scroll-behavior: smooth; }
 
-/* MAIN */
-.main{margin-left:220px;flex:1;padding:2rem 2.5rem;min-height:100vh}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-/* TOPBAR */
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
-.topbar-left h1{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;letter-spacing:-0.5px}
-.topbar-left p{font-size:0.83rem;color:var(--muted);margin-top:2px}
-.topbar-right{display:flex;gap:10px;align-items:center}
-.select-curso{background:var(--card);border:1px solid var(--border);color:var(--text);padding:0.5rem 1rem;border-radius:8px;font-size:0.85rem;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none}
-.select-curso:hover{border-color:rgba(255,255,255,0.2)}
-.btn-export{background:var(--accent);color:#0A0E1A;padding:0.5rem 1rem;border-radius:8px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:box-shadow 0.2s}
-.btn-export:hover{box-shadow:0 4px 16px rgba(79,255,176,0.3)}
-.btn-refresh{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.9rem;border-radius:8px;font-size:0.85rem;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px}
-.btn-refresh:hover{color:var(--accent);border-color:rgba(79,255,176,0.3)}
-.btn-refresh svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.btn-refresh.loading svg{animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
 
-/* STATUS BAR */
-.status-bar{display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--muted);margin-bottom:1.5rem;padding:0.6rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:8px}
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-.status-dot.offline{background:var(--danger);animation:none}
-.status-dot.loading{background:var(--warn)}
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
 
-/* METRIC CARDS */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
-.metric{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem;position:relative;overflow:hidden}
-.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:14px 14px 0 0}
-.metric.green::before{background:var(--accent)}
-.metric.blue::before{background:var(--accent2)}
-.metric.warn::before{background:var(--warn)}
-.metric.danger::before{background:var(--danger)}
-.metric-label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem}
-.metric-val{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;line-height:1}
-.metric.green .metric-val{color:var(--accent)}
-.metric.blue .metric-val{color:var(--accent2)}
-.metric.warn .metric-val{color:var(--warn)}
-.metric.danger .metric-val{color:var(--danger)}
-.metric-sub{font-size:0.75rem;color:var(--muted);margin-top:4px}
-.skeleton{background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,0.05) 50%,var(--card2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;height:2rem;width:60%}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sidebar-top {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
 
-/* CHARTS ROW */
-.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem}
-.chart-title{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:700;margin-bottom:0.3rem}
-.chart-sub{font-size:0.78rem;color:var(--muted);margin-bottom:1.2rem}
-.chart-wrap{position:relative;height:180px}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
 
-/* TABLA */
-.table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem;margin-bottom:1.5rem}
-.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:0.8rem}
-.table-title{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:700}
-.table-controls{display:flex;gap:8px;align-items:center}
-.search-box{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.8rem;border-radius:8px;font-size:0.82rem;font-family:'DM Sans',sans-serif;outline:none;width:180px}
-.search-box:focus{border-color:rgba(79,255,176,0.3)}
-.filter-btn{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:0.4rem 0.8rem;border-radius:8px;font-size:0.78rem;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif}
-.filter-btn.active,.filter-btn:hover{border-color:rgba(79,255,176,0.3);color:var(--accent);background:rgba(79,255,176,0.05)}
-table{width:100%;border-collapse:collapse}
-th{font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0.5rem 0.8rem;text-align:left;border-bottom:1px solid var(--border);font-weight:500}
-td{padding:0.65rem 0.8rem;font-size:0.85rem;border-bottom:1px solid rgba(255,255,255,0.03)}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.02)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:0.72rem;font-weight:500}
-.badge.entregado{background:rgba(79,255,176,0.1);color:var(--accent);border:1px solid rgba(79,255,176,0.2)}
-.badge.pendiente{background:rgba(255,107,107,0.1);color:var(--danger);border:1px solid rgba(255,107,107,0.2)}
-.badge.parcial{background:rgba(255,181,71,0.1);color:var(--warn);border:1px solid rgba(255,181,71,0.2)}
-.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
-.prog-bar{width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:100px;overflow:hidden}
-.prog-fill{height:100%;border-radius:100px;transition:width 0.3s}
-.fill-green{background:var(--accent)}
-.fill-warn{background:var(--warn)}
-.fill-danger{background:var(--danger)}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
 
-/* GUIAS SECTION */
-.guias-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.guias-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem}
-.guia-item{display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid rgba(255,255,255,0.04)}
-.guia-item:last-child{border-bottom:none}
-.guia-info{flex:1}
-.guia-name{font-size:0.88rem;font-weight:500;margin-bottom:2px}
-.guia-meta{font-size:0.75rem;color:var(--muted)}
-.guia-pct{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;min-width:42px;text-align:right}
-.pct-green{color:var(--accent)}
-.pct-warn{color:var(--warn)}
-.pct-danger{color:var(--danger)}
+.logo-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
 
-/* ALERTAS */
-.alert-item{display:flex;align-items:flex-start;gap:10px;padding:0.8rem;background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.15);border-radius:10px;margin-bottom:0.6rem}
-.alert-item:last-child{margin-bottom:0}
-.alert-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:5px}
-.alert-text{font-size:0.83rem;line-height:1.5}
-.alert-text strong{color:var(--danger)}
-.alert-time{font-size:0.72rem;color:var(--muted);margin-top:2px}
+.logo-text span { color: var(--green); }
 
-/* CONFIG MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;width:480px;max-width:95vw}
-.modal h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:0.3rem}
-.modal p{font-size:0.83rem;color:var(--muted);margin-bottom:1.5rem}
-.modal label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:0.3rem;margin-top:1rem}
-.modal input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.8rem;border-radius:8px;font-size:0.85rem;font-family:'DM Sans',sans-serif;outline:none}
-.modal input:focus{border-color:rgba(79,255,176,0.4)}
-.modal-btns{display:flex;gap:8px;margin-top:1.5rem;justify-content:flex-end}
-.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.5rem 1rem;border-radius:8px;font-size:0.85rem;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-save{background:var(--accent);color:#0A0E1A;padding:0.5rem 1.2rem;border-radius:8px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
-.info-box{background:rgba(79,255,176,0.05);border:1px solid rgba(79,255,176,0.15);border-radius:8px;padding:0.8rem 1rem;font-size:0.78rem;color:var(--muted);margin-top:1rem;line-height:1.6}
-.info-box strong{color:var(--accent)}
+.sidebar-subtitle {
+  font-size: 0.7rem;
+  color: var(--text3);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
 
-/* EMPTY STATE */
-.empty{text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem}
-.empty-icon{font-size:2rem;margin-bottom:0.5rem;opacity:0.4}
+.nav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-/* ERROR STATE */
-.error-banner{background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:10px;padding:1rem 1.2rem;font-size:0.83rem;color:var(--danger);margin-bottom:1rem;display:none}
-.error-banner.show{display:block}
+.nav-section {
+  font-size: 0.65rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: var(--mono);
+  padding: 12px 8px 6px;
+}
 
-@media(max-width:900px){
-  .sidebar{display:none}
-  .main{margin-left:0;padding:1.2rem}
-  .metrics{grid-template-columns:repeat(2,1fr)}
-  .charts-row,.guias-row{grid-template-columns:1fr}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  text-decoration: none;
+  position: relative;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: rgba(0,245,160,0.08);
+  border-color: rgba(0,245,160,0.15);
+  color: var(--green);
+}
+
+.nav-item .icon {
+  width: 16px; height: 16px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.nav-item.active .icon { opacity: 1; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-family: var(--mono);
+}
+
+.sidebar-bottom {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius2);
+  background: var(--card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.user-card:hover { border-color: var(--border2); }
+
+.avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #080B14;
+  flex-shrink: 0;
+  font-family: var(--mono);
+}
+
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 0.68rem; color: var(--text3); font-family: var(--mono); }
+
+.conn-indicator {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.conn-indicator.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.conn-indicator.offline { background: var(--red); }
+.conn-indicator.loading { background: var(--amber); animation: blink 1s infinite; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── MAIN ── */
+.main {
+  margin-left: var(--sidebar);
+  flex: 1;
+  padding: 0;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(8,11,20,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+
+.page-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.breadcrumb {
+  font-size: 0.72rem;
+  color: var(--text3);
+  font-family: var(--mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb span { color: var(--text2); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--text2);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+}
+
+.status-dot.online { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.status-dot.loading { background: var(--amber); animation: blink 1s infinite; }
+.status-dot.offline { background: var(--red); }
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-ghost {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text2);
+}
+
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+.btn-primary {
+  background: var(--green);
+  color: #080B14;
+  border-color: transparent;
+}
+
+.btn-primary:hover { background: var(--green2); box-shadow: 0 0 16px rgba(0,245,160,0.3); }
+
+.btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.btn.spinning svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── CONTENT ── */
+.content { padding: 24px 28px; }
+
+/* ── ALERT BANNER ── */
+.alert-banner {
+  display: none;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  font-size: 0.83rem;
+  color: #FCA5A5;
+  line-height: 1.5;
+}
+
+.alert-banner.show { display: flex; }
+.alert-banner.info { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.2); color: #93C5FD; }
+
+/* ── KPI GRID ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.kpi-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.kpi-card.green::after { background: linear-gradient(90deg, var(--green), transparent); }
+.kpi-card.blue::after { background: linear-gradient(90deg, var(--blue), transparent); }
+.kpi-card.amber::after { background: linear-gradient(90deg, var(--amber), transparent); }
+.kpi-card.red::after { background: linear-gradient(90deg, var(--red), transparent); }
+.kpi-card.purple::after { background: linear-gradient(90deg, var(--purple), transparent); }
+
+.kpi-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kpi-label {
+  font-size: 0.7rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--mono);
+}
+
+.kpi-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+
+.kpi-card.green .kpi-icon { background: rgba(0,245,160,0.1); }
+.kpi-card.blue .kpi-icon { background: rgba(59,130,246,0.1); }
+.kpi-card.amber .kpi-icon { background: rgba(245,158,11,0.1); }
+.kpi-card.red .kpi-icon { background: rgba(239,68,68,0.1); }
+.kpi-card.purple .kpi-icon { background: rgba(139,92,246,0.1); }
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 4px;
+  font-family: var(--mono);
+}
+
+.kpi-card.green .kpi-value { color: var(--green); }
+.kpi-card.blue .kpi-value { color: var(--blue); }
+.kpi-card.amber .kpi-value { color: var(--amber); }
+.kpi-card.red .kpi-value { color: var(--red); }
+.kpi-card.purple .kpi-value { color: var(--purple); }
+
+.kpi-sub { font-size: 0.72rem; color: var(--text3); }
+
+.kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  font-family: var(--mono);
+}
+
+/* ── GRID 2 COL ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+/* ── PANEL CARD ── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title { font-size: 0.88rem; font-weight: 600; }
+.panel-sub { font-size: 0.72rem; color: var(--text3); margin-top: 1px; font-family: var(--mono); }
+.panel-body { padding: 20px; }
+
+.chart-wrap { position: relative; height: 200px; }
+
+/* ── TABLE ── */
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  padding: 6px 12px;
+  flex: 1;
+  min-width: 160px;
+  max-width: 240px;
+}
+
+.search-wrap svg { width: 13px; height: 13px; stroke: var(--text3); fill: none; stroke-width: 2; flex-shrink: 0; }
+
+.search-input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.search-input::placeholder { color: var(--text3); }
+
+.filter-group { display: flex; gap: 4px; }
+
+.filter-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius2);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn:hover { color: var(--text); border-color: var(--border2); }
+.filter-btn.active { background: rgba(0,245,160,0.08); border-color: rgba(0,245,160,0.25); color: var(--green); }
+
+.select-filter {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 6px 10px;
+  border-radius: var(--radius2);
+  font-size: 0.78rem;
+  font-family: var(--font);
+  outline: none;
+  cursor: pointer;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  padding: 10px 20px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  font-weight: 500;
+  text-align: left;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 12px 20px;
+  font-size: 0.83rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: middle;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+.student-name { font-weight: 500; color: var(--text); }
+.student-id { font-size: 0.68rem; color: var(--text3); font-family: var(--mono); margin-top: 1px; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.badge-green { background: rgba(0,245,160,0.1); color: var(--green); border: 1px solid rgba(0,245,160,0.2); }
+.badge-amber { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.badge-red { background: rgba(239,68,68,0.1); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.2); }
+
+.prog-wrap { display: flex; align-items: center; gap: 8px; min-width: 100px; }
+.prog-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 100px; transition: width 0.4s ease; }
+.prog-fill.green { background: var(--green); }
+.prog-fill.amber { background: var(--amber); }
+.prog-fill.red { background: var(--red); }
+.prog-label { font-size: 0.68rem; color: var(--text3); font-family: var(--mono); min-width: 28px; text-align: right; }
+
+/* ── GUIAS LIST ── */
+.guia-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.guia-row:last-child { border-bottom: none; }
+
+.guia-num {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem;
+  font-family: var(--mono);
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.guia-info { flex: 1; min-width: 0; }
+.guia-name { font-size: 0.83rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guia-meta { font-size: 0.68rem; color: var(--text3); font-family: var(--mono); }
+
+.guia-pct { font-family: var(--mono); font-size: 0.88rem; font-weight: 600; min-width: 36px; text-align: right; }
+.guia-pct.high { color: var(--green); }
+.guia-pct.mid { color: var(--amber); }
+.guia-pct.low { color: var(--red); }
+
+/* ── ALERT LIST ── */
+.alert-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(239,68,68,0.04);
+  border: 1px solid rgba(239,68,68,0.1);
+  border-radius: var(--radius2);
+  margin-bottom: 8px;
+}
+
+.alert-row:last-child { margin-bottom: 0; }
+.alert-row-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); margin-top: 5px; flex-shrink: 0; }
+.alert-row-body { flex: 1; }
+.alert-row-name { font-size: 0.82rem; font-weight: 600; color: #FCA5A5; }
+.alert-row-detail { font-size: 0.72rem; color: var(--text3); font-family: var(--mono); margin-top: 1px; }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text3);
+  gap: 8px;
+  text-align: center;
+}
+
+.empty-state .icon { font-size: 2rem; opacity: 0.5; }
+.empty-state p { font-size: 0.83rem; }
+
+/* ── SKELETON ── */
+.skel {
+  background: linear-gradient(90deg, var(--card2) 25%, rgba(255,255,255,0.04) 50%, var(--card2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── MODAL ── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 28px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  transform: translateY(8px);
+  transition: transform 0.2s;
+}
+
+.overlay.open .modal { transform: translateY(0); }
+
+.modal-header { margin-bottom: 20px; }
+.modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.modal-sub { font-size: 0.78rem; color: var(--text3); line-height: 1.5; }
+
+.field { margin-bottom: 14px; }
+
+.field label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-family: var(--mono);
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: var(--radius2);
+  font-size: 0.83rem;
+  font-family: var(--mono);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field input:focus { border-color: rgba(0,245,160,0.4); }
+.field input::placeholder { color: var(--text3); }
+
+.info-card {
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.15);
+  border-radius: var(--radius2);
+  padding: 12px 14px;
+  font-size: 0.75rem;
+  color: #93C5FD;
+  line-height: 1.7;
+  margin: 16px 0;
+  font-family: var(--mono);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-2, .grid-3-1 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .content { padding: 16px; }
+  .topbar { padding: 12px 16px; }
+}
+
+/* ── PRINT ── */
+@media print {
+  .sidebar, .topbar, .table-controls, .btn { display: none !important; }
+  .main { margin-left: 0; }
+  .panel, .kpi-card { break-inside: avoid; }
 }
 </style>
 </head>
 <body>
 
 <!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-logo">Guía<span>Bot</span></div>
-  <a class="nav-item active" href="#">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    Resumen general
-  </a>
-  <a class="nav-item" href="#">
-    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-    Estudiantes
-  </a>
-  <a class="nav-item" href="#">
-    <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-    Guías y actividades
-  </a>
-  <a class="nav-item" href="#">
-    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Reportes
-  </a>
-  <a class="nav-item" href="#" onclick="abrirConfig()">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-    Configuración
-  </a>
-  <div class="sidebar-footer">
-    <div class="user-info">
-      <div class="avatar" id="avatar-initials">DO</div>
-      <div>
-        <div class="user-name" id="sidebar-nombre">Docente</div>
-        <div class="user-plan" id="sidebar-plan">Plan Estándar</div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="logo">
+      <div class="logo-icon">🎯</div>
+      <div class="logo-text">Guía<span>Bot</span></div>
+    </div>
+    <div class="sidebar-subtitle">SENA · Panel Docente</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Principal</div>
+
+    <a class="nav-item active" href="#" onclick="return false">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Resumen general
+    </a>
+
+    <a class="nav-item" href="#tabla-section" onclick="scrollToSection('tabla-section')">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Estudiantes
+      <span class="nav-badge" id="nav-badge-pend">0</span>
+    </a>
+
+    <a class="nav-item" href="#guias-section" onclick="scrollToSection('guias-section')">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Guías activas
+    </a>
+
+    <div class="nav-section">Sistema</div>
+
+    <a class="nav-item" href="#" onclick="abrirConfig(); return false;">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Configuración
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="user-card" onclick="abrirConfig()">
+      <div class="avatar" id="av">DO</div>
+      <div class="user-info">
+        <div class="user-name" id="sb-nombre">Docente</div>
+        <div class="user-role" id="sb-plan">sin conectar</div>
       </div>
+      <div class="conn-indicator loading" id="conn-dot"></div>
     </div>
   </div>
 </aside>
 
-<!-- CONFIG MODAL -->
-<div class="modal-overlay" id="modal-config">
+<!-- MODAL CONFIGURACIÓN -->
+<div class="overlay" id="overlay-config">
   <div class="modal">
-    <h2>Conexión a Supabase</h2>
-    <p>Ingresa las credenciales de tu proyecto Supabase para cargar datos reales en tiempo real.</p>
-    <label>Supabase URL</label>
-    <input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co" />
-    <label>Supabase Anon Key</label>
-    <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
-    <label>Docente ID (UUID)</label>
-    <input type="text" id="cfg-docente" placeholder="d114d85c-fb7e-4a79-a446-fb90d652eec2" />
-    <div class="info-box">
-      <strong>¿Dónde encuentro esto?</strong><br>
-      URL y Key: Supabase → Settings → API<br>
-      Docente ID: tabla <code>docentes</code> → columna <code>id</code><br>
-      Los datos se guardan en tu navegador (localStorage).
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Conexión a Supabase</div>
+      <div class="modal-sub">Ingresa las credenciales de tu proyecto para cargar datos reales en tiempo real.</div>
     </div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="cerrarConfig()">Cancelar</button>
-      <button class="btn-save" onclick="guardarConfig()">Guardar y conectar</button>
+
+    <div class="field">
+      <label>Supabase Project URL</label>
+      <input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+    </div>
+    <div class="field">
+      <label>Anon Public Key</label>
+      <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+    </div>
+    <div class="field">
+      <label>Docente ID (UUID)</label>
+      <input type="text" id="cfg-docente" placeholder="d114d85c-fb7e-4a79-a446-fb90d652eec2">
+    </div>
+
+    <div class="info-card">
+      📍 URL y Anon Key → Supabase › Settings › API<br>
+      📍 Docente ID → tabla <strong>docentes</strong> › columna <strong>id</strong><br>
+      🔒 Las credenciales se guardan en tu navegador (localStorage).
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarConfig()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarConfig()">
+        <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Guardar y conectar
+      </button>
     </div>
   </div>
 </div>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN -->
 <main class="main">
 
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
-      <h1>Panel de seguimiento</h1>
-      <p id="periodo-label">Período académico 2026 — Semestre I</p>
+      <div>
+        <div class="page-title">Panel de seguimiento</div>
+        <div class="breadcrumb">GuíaBot › <span id="periodo-label">Período 2026 · Semestre I</span></div>
+      </div>
     </div>
     <div class="topbar-right">
-      <select class="select-curso" id="select-guia" onchange="filtrarPorGuia(this.value)">
-        <option value="">Todas las guías</option>
-      </select>
-      <button class="btn-refresh" id="btn-refresh" onclick="cargarDatos()">
+      <div class="status-pill">
+        <div class="status-dot loading" id="status-dot"></div>
+        <span id="status-text">Conectando...</span>
+      </div>
+      <button class="btn btn-ghost" id="btn-refresh" onclick="cargarDatos()">
         <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         Actualizar
       </button>
-      <button class="btn-export" onclick="exportar()">↓ Exportar PDF</button>
+      <button class="btn btn-primary" onclick="exportarPDF()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar PDF
+      </button>
     </div>
   </div>
 
-  <!-- STATUS -->
-  <div class="status-bar" id="status-bar">
-    <div class="status-dot loading" id="status-dot"></div>
-    <span id="status-text">Conectando a Supabase...</span>
-  </div>
+  <!-- CONTENT -->
+  <div class="content">
 
-  <!-- ERROR -->
-  <div class="error-banner" id="error-banner"></div>
+    <!-- ALERT BANNER -->
+    <div class="alert-banner" id="alert-banner"></div>
 
-  <!-- MÉTRICAS -->
-  <div class="metrics">
-    <div class="metric green">
-      <div class="metric-label">Entregaron</div>
-      <div class="metric-val" id="m-entregaron"><div class="skeleton"></div></div>
-      <div class="metric-sub" id="m-entregaron-sub">cargando...</div>
-    </div>
-    <div class="metric danger">
-      <div class="metric-label">Pendientes</div>
-      <div class="metric-val" id="m-pendientes"><div class="skeleton"></div></div>
-      <div class="metric-sub">estudiantes sin entregar</div>
-    </div>
-    <div class="metric blue">
-      <div class="metric-label">Cumplimiento</div>
-      <div class="metric-val" id="m-pct"><div class="skeleton"></div></div>
-      <div class="metric-sub">promedio general</div>
-    </div>
-    <div class="metric warn">
-      <div class="metric-label">Guías activas</div>
-      <div class="metric-val" id="m-guias"><div class="skeleton"></div></div>
-      <div class="metric-sub">en este período</div>
-    </div>
-  </div>
-
-  <!-- GRÁFICAS -->
-  <div class="charts-row">
-    <div class="chart-card">
-      <div class="chart-title">Cumplimiento por guía</div>
-      <div class="chart-sub">Porcentaje de entregas completadas</div>
-      <div class="chart-wrap"><canvas id="barChart"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Estado general de entregas</div>
-      <div class="chart-sub">Distribución de toda la clase</div>
-      <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
-    </div>
-  </div>
-
-  <!-- TABLA -->
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">Detalle por estudiante</div>
-      <div class="table-controls">
-        <input class="search-box" type="text" placeholder="Buscar estudiante..." oninput="filtrarTabla(this.value)">
-        <button class="filter-btn active" onclick="filtrar('todos',this)">Todos</button>
-        <button class="filter-btn" onclick="filtrar('entregado',this)">Entregaron</button>
-        <button class="filter-btn" onclick="filtrar('pendiente',this)">Pendientes</button>
+    <!-- KPI GRID -->
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-header">
+          <div class="kpi-label">Entregaron</div>
+          <div class="kpi-icon">✅</div>
+        </div>
+        <div class="kpi-value" id="kpi-entregaron"><div class="skel" style="height:2rem;width:60%"></div></div>
+        <div class="kpi-sub" id="kpi-entregaron-sub">de — estudiantes</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-header">
+          <div class="kpi-label">Pendientes</div>
+          <div class="kpi-icon">⏳</div>
+        </div>
+        <div class="kpi-value" id="kpi-pendientes"><div class="skel" style="height:2rem;width:50%"></div></div>
+        <div class="kpi-sub">sin ninguna entrega</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-header">
+          <div class="kpi-label">Cumplimiento</div>
+          <div class="kpi-icon">📊</div>
+        </div>
+        <div class="kpi-value" id="kpi-pct"><div class="skel" style="height:2rem;width:55%"></div></div>
+        <div class="kpi-sub">promedio general</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-header">
+          <div class="kpi-label">Guías activas</div>
+          <div class="kpi-icon">📋</div>
+        </div>
+        <div class="kpi-value" id="kpi-guias"><div class="skel" style="height:2rem;width:40%"></div></div>
+        <div class="kpi-sub">en este período</div>
       </div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Estudiante</th>
-          <th>Guía</th>
-          <th>Última verificación</th>
-          <th>Evidencias</th>
-          <th>Progreso</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody id="tabla-body">
-        <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div>Cargando datos...</div></td></tr>
-      </tbody>
-    </table>
-  </div>
 
-  <!-- GUÍAS + ALERTAS -->
-  <div class="guias-row">
-    <div class="guias-card">
-      <div class="chart-title" style="margin-bottom:0.3rem">Resumen por guía</div>
-      <div class="chart-sub" style="margin-bottom:1rem">Cumplimiento por guía activa</div>
-      <div id="guias-list"><div class="empty"><div class="empty-icon">📋</div>Cargando guías...</div></div>
+    <!-- CHARTS ROW -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Cumplimiento por guía</div>
+            <div class="panel-sub">% de entregas completadas</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="chart-wrap"><canvas id="chart-bar"></canvas></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Distribución general</div>
+            <div class="panel-sub">Estado de todos los estudiantes</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+        </div>
+      </div>
     </div>
-    <div class="guias-card">
-      <div class="chart-title" style="margin-bottom:0.3rem">Alertas — Sin entregar</div>
-      <div class="chart-sub" style="margin-bottom:1rem">Estudiantes con 0% de entrega</div>
-      <div id="alertas-list"><div class="empty"><div class="empty-icon">🔔</div>Sin alertas</div></div>
-    </div>
-  </div>
 
+    <!-- TABLA ESTUDIANTES -->
+    <div class="panel" id="tabla-section" style="margin-bottom:20px">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Detalle por estudiante</div>
+          <div class="panel-sub" id="tabla-sub">Cargando registros...</div>
+        </div>
+        <select class="select-filter" id="select-guia" onchange="filtrarPorGuia(this.value)">
+          <option value="">Todas las guías</option>
+        </select>
+      </div>
+      <div class="table-controls">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Buscar estudiante..." oninput="buscar(this.value)">
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="setFiltro('todos',this)">Todos</button>
+          <button class="filter-btn" onclick="setFiltro('entregado',this)">Entregaron</button>
+          <button class="filter-btn" onclick="setFiltro('parcial',this)">Parcial</button>
+          <button class="filter-btn" onclick="setFiltro('pendiente',this)">Pendientes</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Estudiante</th>
+              <th>Guía</th>
+              <th>Última verificación</th>
+              <th>Evidencias</th>
+              <th>Progreso</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body">
+            <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Cargando datos...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GUÍAS + ALERTAS -->
+    <div class="grid-2" id="guias-section">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Guías activas</div>
+            <div class="panel-sub">Cumplimiento promedio por guía</div>
+          </div>
+        </div>
+        <div class="panel-body" id="guias-list">
+          <div class="empty-state"><div class="icon">📋</div><p>Sin guías cargadas</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Alertas críticas</div>
+            <div class="panel-sub">Estudiantes con 0% de entrega</div>
+          </div>
+        </div>
+        <div class="panel-body" id="alertas-list">
+          <div class="empty-state"><div class="icon">✅</div><p>Sin alertas</p></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
 </main>
 
 <script>
-// ══════════════════════════════════════════════════════
-//  CONFIGURACIÓN — se guarda en localStorage
-// ══════════════════════════════════════════════════════
-const CFG_KEY = 'guiabot_cfg';
+// ════════════════════════════════════════════════════
+//  CONFIG & STORAGE
+// ════════════════════════════════════════════════════
+const STORAGE_KEY = 'guiabot_v2';
 
 function getCfg() {
-  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; } catch { return {}; }
-}
-function saveCfg(cfg) {
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
 }
 
+function saveCfg(c) { localStorage.setItem(STORAGE_KEY, JSON.stringify(c)); }
+
 function abrirConfig() {
-  const cfg = getCfg();
-  document.getElementById('cfg-url').value = cfg.url || '';
-  document.getElementById('cfg-key').value = cfg.key || '';
-  document.getElementById('cfg-docente').value = cfg.docenteId || '';
-  document.getElementById('modal-config').classList.add('open');
+  const c = getCfg();
+  document.getElementById('cfg-url').value = c.url || '';
+  document.getElementById('cfg-key').value = c.key || '';
+  document.getElementById('cfg-docente').value = c.docenteId || '';
+  document.getElementById('overlay-config').classList.add('open');
 }
+
 function cerrarConfig() {
-  document.getElementById('modal-config').classList.remove('open');
+  document.getElementById('overlay-config').classList.remove('open');
 }
+
 function guardarConfig() {
-  const cfg = {
+  const c = {
     url: document.getElementById('cfg-url').value.trim(),
     key: document.getElementById('cfg-key').value.trim(),
     docenteId: document.getElementById('cfg-docente').value.trim(),
   };
-  if (!cfg.url || !cfg.key || !cfg.docenteId) {
-    alert('Completa todos los campos.');
-    return;
-  }
-  saveCfg(cfg);
+  if (!c.url || !c.key || !c.docenteId) { alert('Completa todos los campos.'); return; }
+  saveCfg(c);
   cerrarConfig();
   cargarDatos();
 }
 
-// ══════════════════════════════════════════════════════
-//  SUPABASE CLIENT
-// ══════════════════════════════════════════════════════
-function getClient() {
-  const cfg = getCfg();
-  if (!cfg.url || !cfg.key) return null;
-  return supabase.createClient(cfg.url, cfg.key);
+// Cerrar modal al hacer clic fuera
+document.getElementById('overlay-config').addEventListener('click', function(e) {
+  if (e.target === this) cerrarConfig();
+});
+
+// ════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ════════════════════════════════════════════════════
+let DATA = [];
+let filtroEstado = 'todos';
+let filtroGuia = '';
+let busquedaActual = '';
+let barChart = null;
+let donutChart = null;
+
+// ════════════════════════════════════════════════════
+//  SUPABASE
+// ════════════════════════════════════════════════════
+function getDB() {
+  const c = getCfg();
+  if (!c.url || !c.key) return null;
+  return supabase.createClient(c.url, c.key);
 }
 
-// ══════════════════════════════════════════════════════
-//  ESTADO GLOBAL
-// ══════════════════════════════════════════════════════
-let todosLosResultados = [];  // Raw data de Supabase
-let filtroActual = 'todos';
-let busquedaActual = '';
-let guiaFiltro = '';
-let barChartInstance = null;
-let donutChartInstance = null;
-
-// ══════════════════════════════════════════════════════
-//  CARGAR DATOS DESDE SUPABASE
-// ══════════════════════════════════════════════════════
 async function cargarDatos() {
-  const cfg = getCfg();
-
-  if (!cfg.url || !cfg.key || !cfg.docenteId) {
-    setStatus('offline', '⚙️ Configura la conexión a Supabase primero');
-    mostrarError('No hay conexión configurada. Haz clic en Configuración → Configuración para ingresar tus credenciales de Supabase.');
+  const c = getCfg();
+  if (!c.url || !c.key || !c.docenteId) {
+    setStatus('offline', 'Sin conexión — configura Supabase');
+    setConnDot('offline');
+    showBanner('Para ver datos reales, ve a Configuración e ingresa tus credenciales de Supabase.', 'info');
+    renderVacio();
     return;
   }
 
-  setStatus('loading', 'Conectando a Supabase...');
-  setBtnLoading(true);
-  ocultarError();
+  setStatus('loading', 'Conectando...');
+  setConnDot('loading');
+  hideBanner();
+  setBtnSpin(true);
 
   try {
-    const db = getClient();
+    const db = getDB();
 
-    // 1. Datos del docente
-    const { data: docente, error: errDoc } = await db
-      .from('docentes')
-      .select('nombre, plan, email')
-      .eq('id', cfg.docenteId)
-      .single();
+    // Docente
+    const { data: doc, error: eDoc } = await db
+      .from('docentes').select('nombre,plan,email')
+      .eq('id', c.docenteId).single();
 
-    if (errDoc) throw new Error('No se pudo cargar el docente: ' + errDoc.message);
+    if (eDoc) throw new Error('Docente no encontrado: ' + eDoc.message);
 
-    // Actualizar sidebar
-    document.getElementById('sidebar-nombre').textContent = docente.nombre || 'Docente';
-    document.getElementById('sidebar-plan').textContent = 'Plan ' + capitalizar(docente.plan || 'estándar');
-    const iniciales = (docente.nombre || 'DO').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
-    document.getElementById('avatar-initials').textContent = iniciales;
+    // Actualizar UI con datos del docente
+    const iniciales = (doc.nombre || 'DO').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('av').textContent = iniciales;
+    document.getElementById('sb-nombre').textContent = doc.nombre || 'Docente';
+    document.getElementById('sb-plan').textContent = 'Plan ' + capitalizar(doc.plan || 'estándar');
 
-    // 2. Verificaciones del docente (tabla donde el bot guarda los resultados)
-    const { data: verificaciones, error: errVer } = await db
-      .from('verificaciones')
-      .select('*')
-      .eq('docente_id', cfg.docenteId)
+    // Verificaciones
+    const { data: verif, error: eV } = await db
+      .from('verificaciones').select('*')
+      .eq('docente_id', c.docenteId)
       .order('fecha', { ascending: false });
 
-    if (errVer) throw new Error('No se pudo cargar verificaciones: ' + errVer.message);
+    if (eV) throw new Error('Error cargando verificaciones: ' + eV.message);
 
-    // 3. Guías activas del docente
-    const { data: guias, error: errGuias } = await db
-      .from('guias')
-      .select('id, nombre')
-      .eq('docente_id', cfg.docenteId)
-      .eq('activa', true);
+    // Guías activas
+    const { data: guias, error: eG } = await db
+      .from('guias').select('id,nombre')
+      .eq('docente_id', c.docenteId).eq('activa', true);
 
-    if (errGuias) throw new Error('No se pudo cargar guías: ' + errGuias.message);
-
-    todosLosResultados = procesarVerificaciones(verificaciones || []);
-
-    // Poblar selector de guías
-    poblarSelectorGuias(guias || [], verificaciones || []);
-
-    // Renderizar todo
+    DATA = procesarDatos(verif || []);
+    poblarSelectGuias(guias || [], verif || []);
     renderTodo();
 
-    const ahora = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    setStatus('online', `Conectado · Última actualización: ${ahora} · ${(verificaciones || []).length} registros`);
+    const hora = new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'});
+    setStatus('online', `Activo · ${hora} · ${(verif||[]).length} registros`);
+    setConnDot('online');
 
-  } catch (err) {
+  } catch(err) {
     console.error(err);
     setStatus('offline', 'Error de conexión');
-    mostrarError(err.message);
+    setConnDot('offline');
+    showBanner('⚠️ ' + err.message);
   } finally {
-    setBtnLoading(false);
+    setBtnSpin(false);
   }
 }
 
-// ══════════════════════════════════════════════════════
-//  PROCESAR DATOS CRUDOS DE LA TABLA verificaciones
-//  Estructura: { docente_id, estudiante, guia, evidencia, entregado, fecha }
-// ══════════════════════════════════════════════════════
-function procesarVerificaciones(rows) {
-  // Agrupar por estudiante + guía
+// ════════════════════════════════════════════════════
+//  PROCESAR DATOS
+//  Tabla verificaciones: { docente_id, estudiante, guia, evidencia, entregado, fecha }
+// ════════════════════════════════════════════════════
+function procesarDatos(rows) {
   const mapa = {};
+
   for (const r of rows) {
-    const k = `${r.estudiante}|||${r.guia}`;
+    const k = r.estudiante + '|||' + r.guia;
     if (!mapa[k]) {
       mapa[k] = {
-        nombre: r.estudiante,
+        estudiante: r.estudiante,
         guia: r.guia,
         fecha: r.fecha,
-        evidencias: [],
-        entregadas: 0,
+        evidencias: {},
         total: 0,
+        entregadas: 0,
       };
     }
-    // Solo tomar el registro más reciente por evidencia
-    const yaExiste = mapa[k].evidencias.find(e => e.nombre === r.evidencia);
-    if (!yaExiste) {
-      mapa[k].evidencias.push({ nombre: r.evidencia, entregado: r.entregado });
+    if (!(r.evidencia in mapa[k].evidencias)) {
+      mapa[k].evidencias[r.evidencia] = r.entregado;
       mapa[k].total++;
       if (r.entregado) mapa[k].entregadas++;
     }
-    // Actualizar fecha con la más reciente
     if (r.fecha > mapa[k].fecha) mapa[k].fecha = r.fecha;
   }
 
   return Object.values(mapa).map(item => {
     const pct = item.total > 0 ? Math.round(item.entregadas / item.total * 100) : 0;
-    let estado = pct === 0 ? 'pendiente' : pct === 100 ? 'entregado' : 'parcial';
+    const estado = pct === 0 ? 'pendiente' : pct === 100 ? 'entregado' : 'parcial';
     return { ...item, pct, estado };
-  });
+  }).sort((a, b) => a.estudiante.localeCompare(b.estudiante));
 }
 
-// ══════════════════════════════════════════════════════
-//  POBLAR SELECTOR DE GUÍAS
-// ══════════════════════════════════════════════════════
-function poblarSelectorGuias(guias, verificaciones) {
-  const select = document.getElementById('select-guia');
-  const guiasEnVerif = [...new Set(verificaciones.map(v => v.guia))];
-  const todasGuias = guias.length > 0
-    ? guias.map(g => g.nombre)
-    : guiasEnVerif;
-
-  select.innerHTML = '<option value="">Todas las guías</option>';
-  todasGuias.forEach(nombre => {
-    const opt = document.createElement('option');
-    opt.value = nombre;
-    opt.textContent = nombre;
-    select.appendChild(opt);
-  });
-
-  // Actualizar métrica de guías activas
-  document.getElementById('m-guias').textContent = todasGuias.length;
-}
-
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 //  FILTROS
-// ══════════════════════════════════════════════════════
-function getDatosFiltrados() {
-  return todosLosResultados.filter(e => {
-    const matchEstado = filtroActual === 'todos' || e.estado === filtroActual;
-    const matchBusqueda = e.nombre.toLowerCase().includes(busquedaActual.toLowerCase());
-    const matchGuia = !guiaFiltro || e.guia === guiaFiltro;
-    return matchEstado && matchBusqueda && matchGuia;
+// ════════════════════════════════════════════════════
+function getDatos() {
+  return DATA.filter(e => {
+    const mE = filtroEstado === 'todos' || e.estado === filtroEstado;
+    const mG = !filtroGuia || e.guia === filtroGuia;
+    const mB = !busquedaActual || e.estudiante.toLowerCase().includes(busquedaActual.toLowerCase());
+    return mE && mG && mB;
   });
 }
 
-function filtrar(tipo, btn) {
-  filtroActual = tipo;
+function setFiltro(tipo, btn) {
+  filtroEstado = tipo;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderTabla();
 }
 
-function filtrarTabla(val) {
-  busquedaActual = val;
-  renderTabla();
+function buscar(val) { busquedaActual = val; renderTabla(); }
+
+function filtrarPorGuia(val) { filtroGuia = val; renderTodo(); }
+
+function poblarSelectGuias(guias, verif) {
+  const sel = document.getElementById('select-guia');
+  const nombresDeVerif = [...new Set(verif.map(v => v.guia))];
+  const lista = guias.length ? guias.map(g => g.nombre) : nombresDeVerif;
+  sel.innerHTML = '<option value="">Todas las guías</option>';
+  lista.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n;
+    sel.appendChild(o);
+  });
+  document.getElementById('kpi-guias').textContent = lista.length;
 }
 
-function filtrarPorGuia(val) {
-  guiaFiltro = val;
-  renderTodo();
-}
-
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 //  RENDER PRINCIPAL
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 function renderTodo() {
-  const datos = getDatosFiltrados();
-  renderMetricas(datos);
+  const datos = getDatos();
+  renderKPIs(datos);
   renderTabla();
   renderGuias(datos);
   renderAlertas(datos);
   renderCharts(datos);
 }
 
-// ══════════════════════════════════════════════════════
-//  MÉTRICAS
-// ══════════════════════════════════════════════════════
-function renderMetricas(datos) {
-  const entregaron = datos.filter(e => e.estado === 'entregado').length;
-  const pendientes = datos.filter(e => e.estado === 'pendiente').length;
-  const total = datos.length;
-  const pctGeneral = total > 0
-    ? Math.round(datos.reduce((acc, e) => acc + e.pct, 0) / total)
-    : 0;
-
-  document.getElementById('m-entregaron').textContent = entregaron;
-  document.getElementById('m-entregaron-sub').textContent = `de ${total} registros`;
-  document.getElementById('m-pendientes').textContent = pendientes;
-  document.getElementById('m-pct').textContent = pctGeneral + '%';
+function renderVacio() {
+  document.getElementById('kpi-entregaron').textContent = '—';
+  document.getElementById('kpi-pendientes').textContent = '—';
+  document.getElementById('kpi-pct').textContent = '—';
+  document.getElementById('kpi-guias').textContent = '—';
+  document.getElementById('tabla-body').innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔌</div><p>Configura la conexión a Supabase</p></div></td></tr>`;
 }
 
-// ══════════════════════════════════════════════════════
-//  TABLA
-// ══════════════════════════════════════════════════════
+// ── KPIs ──
+function renderKPIs(datos) {
+  const entregaron = datos.filter(e => e.estado === 'entregado').length;
+  const pendientes = datos.filter(e => e.estado === 'pendiente').length;
+  const pct = datos.length ? Math.round(datos.reduce((a,e) => a+e.pct, 0) / datos.length) : 0;
+
+  document.getElementById('kpi-entregaron').textContent = entregaron;
+  document.getElementById('kpi-entregaron-sub').textContent = `de ${datos.length} registros`;
+  document.getElementById('kpi-pendientes').textContent = pendientes;
+  document.getElementById('kpi-pct').textContent = pct + '%';
+  document.getElementById('nav-badge-pend').textContent = pendientes;
+  document.getElementById('tabla-sub').textContent = `${datos.length} registros encontrados`;
+}
+
+// ── TABLA ──
 function renderTabla() {
   const tbody = document.getElementById('tabla-body');
-  const datos = getDatosFiltrados();
+  const datos = getDatos();
 
   if (!datos.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>No se encontraron registros</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>Sin registros para mostrar</p></div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = datos.map(e => {
-    const badgeClass = e.estado === 'entregado' ? 'entregado' : e.estado === 'parcial' ? 'parcial' : 'pendiente';
+  tbody.innerHTML = datos.map((e, i) => {
+    const fillClass = e.pct >= 80 ? 'green' : e.pct >= 40 ? 'amber' : 'red';
+    const badgeClass = e.estado === 'entregado' ? 'badge-green' : e.estado === 'parcial' ? 'badge-amber' : 'badge-red';
     const badgeLabel = e.estado === 'entregado' ? 'Entregó' : e.estado === 'parcial' ? 'Parcial' : 'Pendiente';
-    const fillClass = e.pct >= 80 ? 'fill-green' : e.pct >= 40 ? 'fill-warn' : 'fill-danger';
-    const fechaDisplay = e.fecha ? formatFecha(e.fecha) : '—';
-    const actDisplay = `${e.entregadas}/${e.total}`;
     return `<tr>
-      <td style="font-weight:500">${e.nombre}</td>
-      <td style="color:var(--muted);font-size:0.8rem">${e.guia}</td>
-      <td style="color:var(--muted);font-size:0.8rem">${fechaDisplay}</td>
-      <td>${actDisplay}</td>
-      <td style="min-width:100px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="prog-bar" style="flex:1"><div class="prog-fill ${fillClass}" style="width:${e.pct}%"></div></div>
-          <span style="font-size:0.75rem;color:var(--muted);min-width:28px">${e.pct}%</span>
+      <td style="color:var(--text3);font-family:var(--mono);font-size:0.68rem">${String(i+1).padStart(2,'0')}</td>
+      <td>
+        <div class="student-name">${e.estudiante}</div>
+      </td>
+      <td style="color:var(--text2);font-size:0.78rem;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.guia}</td>
+      <td style="color:var(--text3);font-family:var(--mono);font-size:0.72rem">${formatFecha(e.fecha)}</td>
+      <td style="font-family:var(--mono);font-size:0.78rem">${e.entregadas}<span style="color:var(--text3)">/${e.total}</span></td>
+      <td>
+        <div class="prog-wrap">
+          <div class="prog-bar"><div class="prog-fill ${fillClass}" style="width:${e.pct}%"></div></div>
+          <div class="prog-label">${e.pct}%</div>
         </div>
       </td>
       <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
@@ -611,93 +1286,86 @@ function renderTabla() {
   }).join('');
 }
 
-// ══════════════════════════════════════════════════════
-//  GUÍAS
-// ══════════════════════════════════════════════════════
+// ── GUÍAS ──
 function renderGuias(datos) {
+  const porGuia = {};
+  for (const e of datos) {
+    if (!porGuia[e.guia]) porGuia[e.guia] = [];
+    porGuia[e.guia].push(e.pct);
+  }
+
+  const arr = Object.entries(porGuia).map(([nombre, pcts], idx) => ({
+    nombre,
+    pct: Math.round(pcts.reduce((a,b)=>a+b,0) / pcts.length),
+    count: pcts.length,
+    idx: idx + 1,
+  })).sort((a,b) => b.pct - a.pct);
+
+  if (!arr.length) {
+    document.getElementById('guias-list').innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Sin guías con datos</p></div>`;
+    return;
+  }
+
+  document.getElementById('guias-list').innerHTML = arr.map(g => {
+    const cls = g.pct >= 80 ? 'high' : g.pct >= 50 ? 'mid' : 'low';
+    const fillClass = g.pct >= 80 ? 'green' : g.pct >= 50 ? 'amber' : 'red';
+    return `<div class="guia-row">
+      <div class="guia-num">${String(g.idx).padStart(2,'0')}</div>
+      <div class="guia-info">
+        <div class="guia-name">${g.nombre}</div>
+        <div class="guia-meta">${g.count} estudiante${g.count!==1?'s':''}</div>
+        <div class="prog-bar" style="margin-top:5px"><div class="prog-fill ${fillClass}" style="width:${g.pct}%"></div></div>
+      </div>
+      <div class="guia-pct ${cls}">${g.pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ── ALERTAS ──
+function renderAlertas(datos) {
+  const alertas = datos.filter(e => e.pct === 0).sort((a,b) => a.estudiante.localeCompare(b.estudiante));
+
+  if (!alertas.length) {
+    document.getElementById('alertas-list').innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>Sin alertas críticas</p></div>`;
+    return;
+  }
+
+  document.getElementById('alertas-list').innerHTML = alertas.map(a =>
+    `<div class="alert-row">
+      <div class="alert-row-dot"></div>
+      <div class="alert-row-body">
+        <div class="alert-row-name">${a.estudiante}</div>
+        <div class="alert-row-detail">${a.guia} · 0/${a.total} evidencias</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ── CHARTS ──
+function renderCharts(datos) {
+  const colores = ['#00F5A0','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#EC4899'];
+  const fontColor = '#475569';
+  const gridColor = 'rgba(255,255,255,0.04)';
+
   // Agrupar por guía
   const porGuia = {};
   for (const e of datos) {
     if (!porGuia[e.guia]) porGuia[e.guia] = [];
     porGuia[e.guia].push(e.pct);
   }
+  const labels = Object.keys(porGuia).map(g => g.length > 18 ? g.slice(0,18)+'…' : g);
+  const values = Object.values(porGuia).map(pcts => Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length));
 
-  const guiasArr = Object.entries(porGuia).map(([nombre, pcts]) => ({
-    nombre,
-    pct: Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length),
-    count: pcts.length,
-  }));
-
-  if (!guiasArr.length) {
-    document.getElementById('guias-list').innerHTML = `<div class="empty"><div class="empty-icon">📋</div>No hay guías con datos</div>`;
-    return;
-  }
-
-  document.getElementById('guias-list').innerHTML = guiasArr.map(g => {
-    const pctClass = g.pct >= 80 ? 'pct-green' : g.pct >= 50 ? 'pct-warn' : 'pct-danger';
-    const fillClass = g.pct >= 80 ? 'fill-green' : g.pct >= 50 ? 'fill-warn' : 'fill-danger';
-    return `<div class="guia-item">
-      <div class="guia-info">
-        <div class="guia-name">${g.nombre}</div>
-        <div class="guia-meta">${g.count} estudiante${g.count !== 1 ? 's' : ''}</div>
-        <div class="prog-bar" style="margin-top:6px"><div class="prog-fill ${fillClass}" style="width:${g.pct}%"></div></div>
-      </div>
-      <div class="guia-pct ${pctClass}" style="margin-left:1rem">${g.pct}%</div>
-    </div>`;
-  }).join('');
-}
-
-// ══════════════════════════════════════════════════════
-//  ALERTAS
-// ══════════════════════════════════════════════════════
-function renderAlertas(datos) {
-  const alertas = datos
-    .filter(e => e.pct < 40)
-    .sort((a, b) => a.pct - b.pct)
-    .slice(0, 8);
-
-  if (!alertas.length) {
-    document.getElementById('alertas-list').innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sin alertas críticas</div>`;
-    return;
-  }
-
-  document.getElementById('alertas-list').innerHTML = alertas.map(a =>
-    `<div class="alert-item">
-      <div class="alert-dot"></div>
-      <div>
-        <div class="alert-text"><strong>${a.nombre}</strong> — ${a.guia}</div>
-        <div class="alert-time">${a.entregadas}/${a.total} evidencias · ${a.pct}% cumplimiento</div>
-      </div>
-    </div>`
-  ).join('');
-}
-
-// ══════════════════════════════════════════════════════
-//  CHARTS
-// ══════════════════════════════════════════════════════
-function renderCharts(datos) {
-  const fontColor = '#7B8BAC';
-  const gridColor = 'rgba(255,255,255,0.05)';
-
-  // Agrupar por guía para bar chart
-  const porGuia = {};
-  for (const e of datos) {
-    if (!porGuia[e.guia]) porGuia[e.guia] = [];
-    porGuia[e.guia].push(e.pct);
-  }
-  const guiaLabels = Object.keys(porGuia).map(g => g.length > 20 ? g.slice(0, 20) + '…' : g);
-  const guiaValues = Object.values(porGuia).map(pcts => Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length));
-
-  const colores = ['rgba(79,255,176,0.7)','rgba(0,201,255,0.7)','rgba(255,181,71,0.7)','rgba(255,107,107,0.7)','rgba(167,139,250,0.7)'];
-
-  if (barChartInstance) barChartInstance.destroy();
-  barChartInstance = new Chart(document.getElementById('barChart'), {
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('chart-bar'), {
     type: 'bar',
     data: {
-      labels: guiaLabels.length ? guiaLabels : ['Sin datos'],
+      labels: labels.length ? labels : ['Sin datos'],
       datasets: [{
-        data: guiaValues.length ? guiaValues : [0],
-        backgroundColor: guiaLabels.map((_, i) => colores[i % colores.length]),
+        data: values.length ? values : [0],
+        backgroundColor: labels.map((_,i) => colores[i % colores.length] + 'CC'),
+        borderColor: labels.map((_,i) => colores[i % colores.length]),
+        borderWidth: 1,
         borderRadius: 6,
         borderSkipped: false,
       }]
@@ -706,8 +1374,8 @@ function renderCharts(datos) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: fontColor, font: { size: 11 } }, grid: { color: gridColor }, border: { display: false } },
-        y: { ticks: { color: fontColor, font: { size: 11 }, callback: v => v + '%' }, grid: { color: gridColor }, border: { display: false }, max: 100, min: 0 }
+        x: { ticks: { color: fontColor, font: { size: 10, family: "'JetBrains Mono'" } }, grid: { color: gridColor }, border: { display: false } },
+        y: { min: 0, max: 100, ticks: { color: fontColor, font: { size: 10, family: "'JetBrains Mono'" }, callback: v => v+'%' }, grid: { color: gridColor }, border: { display: false } }
       }
     }
   });
@@ -717,98 +1385,95 @@ function renderCharts(datos) {
   const parcial = datos.filter(e => e.estado === 'parcial').length;
   const pendientes = datos.filter(e => e.estado === 'pendiente').length;
 
-  if (donutChartInstance) donutChartInstance.destroy();
-  donutChartInstance = new Chart(document.getElementById('donutChart'), {
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('chart-donut'), {
     type: 'doughnut',
     data: {
       labels: ['Entregaron', 'Parcial', 'Pendientes'],
       datasets: [{
         data: [entregaron, parcial, pendientes],
-        backgroundColor: ['rgba(79,255,176,0.8)','rgba(255,181,71,0.8)','rgba(255,107,107,0.8)'],
-        borderColor: '#161D2F',
+        backgroundColor: ['rgba(0,245,160,0.85)', 'rgba(245,158,11,0.85)', 'rgba(239,68,68,0.85)'],
+        borderColor: '#111827',
         borderWidth: 3,
-        hoverOffset: 6
+        hoverOffset: 8,
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: fontColor, font: { size: 11 }, padding: 16, boxWidth: 10, boxHeight: 10 } }
+        legend: {
+          position: 'bottom',
+          labels: { color: fontColor, font: { size: 11, family: "'JetBrains Mono'" }, padding: 16, boxWidth: 10, boxHeight: 10 }
+        }
       }
     }
   });
 }
 
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 //  UTILS
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 function setStatus(tipo, msg) {
   const dot = document.getElementById('status-dot');
   dot.className = 'status-dot ' + tipo;
   document.getElementById('status-text').textContent = msg;
 }
 
-function setBtnLoading(loading) {
-  document.getElementById('btn-refresh').classList.toggle('loading', loading);
+function setConnDot(tipo) {
+  document.getElementById('conn-dot').className = 'conn-indicator ' + tipo;
 }
 
-function mostrarError(msg) {
-  const el = document.getElementById('error-banner');
-  el.textContent = '⚠️ ' + msg;
-  el.classList.add('show');
+function setBtnSpin(s) {
+  document.getElementById('btn-refresh').classList.toggle('spinning', s);
 }
 
-function ocultarError() {
-  document.getElementById('error-banner').classList.remove('show');
+function showBanner(msg, tipo = '') {
+  const el = document.getElementById('alert-banner');
+  el.textContent = msg;
+  el.className = 'alert-banner show ' + tipo;
 }
 
-function capitalizar(str) {
-  return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+function hideBanner() {
+  document.getElementById('alert-banner').classList.remove('show');
 }
+
+function capitalizar(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 
 function formatFecha(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  const ahora = new Date();
-  const diff = Math.floor((ahora - d) / 1000 / 60);
+  const d = new Date(iso), now = new Date();
+  const diff = Math.floor((now - d) / 60000);
   if (diff < 2) return 'Ahora';
-  if (diff < 60) return `Hace ${diff} min`;
-  const horas = Math.floor(diff / 60);
-  if (horas < 24) return `Hace ${horas}h`;
-  const dias = Math.floor(horas / 24);
+  if (diff < 60) return `hace ${diff}m`;
+  const h = Math.floor(diff / 60);
+  if (h < 24) return `hace ${h}h`;
+  const dias = Math.floor(h / 24);
   if (dias === 1) return 'Ayer';
-  if (dias < 7) return `Hace ${dias} días`;
+  if (dias < 7) return `hace ${dias}d`;
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
-// ══════════════════════════════════════════════════════
-//  EXPORTAR
-// ══════════════════════════════════════════════════════
-function exportar() {
-  window.print();
+function scrollToSection(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ══════════════════════════════════════════════════════
-//  AUTO-REFRESH CADA 5 MINUTOS
-// ══════════════════════════════════════════════════════
-setInterval(() => {
-  const cfg = getCfg();
-  if (cfg.url && cfg.key && cfg.docenteId) cargarDatos();
-}, 5 * 60 * 1000);
+function exportarPDF() { window.print(); }
 
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+//  AUTO-REFRESH cada 5 min
+// ════════════════════════════════════════════════════
+setInterval(() => { const c = getCfg(); if (c.url && c.key && c.docenteId) cargarDatos(); }, 5 * 60 * 1000);
+
+// ════════════════════════════════════════════════════
 //  INIT
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 (function init() {
-  const cfg = getCfg();
-  if (!cfg.url || !cfg.key || !cfg.docenteId) {
-    setStatus('offline', '⚙️ Sin conexión — Configura Supabase en Configuración');
-    mostrarError('Para ver datos reales, ve a Configuración → Configuración e ingresa tu URL de Supabase, la Anon Key y tu Docente ID.');
-    // Mostrar datos vacíos
-    document.getElementById('m-entregaron').textContent = '—';
-    document.getElementById('m-pendientes').textContent = '—';
-    document.getElementById('m-pct').textContent = '—';
-    document.getElementById('m-guias').textContent = '—';
+  const c = getCfg();
+  if (!c.url || !c.key || !c.docenteId) {
+    setStatus('offline', 'Sin conexión');
+    setConnDot('offline');
+    showBanner('Configura la conexión a Supabase para cargar datos reales. Ve a Configuración en el menú lateral.', 'info');
+    renderVacio();
     return;
   }
   cargarDatos();
