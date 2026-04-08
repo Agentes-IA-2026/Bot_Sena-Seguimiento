@@ -7,5 +7,5 @@
     { "src": "/dashboard", "dest": "/dashboard.html" },
     { "src": "/", "dest": "/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
-  ]
-}
+  
+
