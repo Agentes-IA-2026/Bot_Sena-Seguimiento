@@ -1,11 +1,8 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/login", "dest": "/login.html" },
-    { "src": "/dashboard", "dest": "/dashboard.html" },
-    { "src": "/", "dest": "/index.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/dashboard.html", "dest": "/dashboard.html" },
+    { "src": "/login.html", "dest": "/login.html" },
+    { "src": "/", "dest": "/index.html" }
   ]
 }
-  
-
