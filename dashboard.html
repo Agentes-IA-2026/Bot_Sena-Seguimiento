@@ -6,6 +6,8 @@
 <title>GuíaBot — Dashboard Docente</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -42,6 +44,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .select-curso:hover{border-color:rgba(255,255,255,0.2)}
 .btn-export{background:var(--accent);color:#0A0E1A;padding:0.5rem 1rem;border-radius:8px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:box-shadow 0.2s}
 .btn-export:hover{box-shadow:0 4px 16px rgba(79,255,176,0.3)}
+.btn-refresh{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.9rem;border-radius:8px;font-size:0.85rem;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px}
+.btn-refresh:hover{color:var(--accent);border-color:rgba(79,255,176,0.3)}
+.btn-refresh svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-refresh.loading svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* STATUS BAR */
+.status-bar{display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--muted);margin-bottom:1.5rem;padding:0.6rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:8px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-dot.offline{background:var(--danger);animation:none}
+.status-dot.loading{background:var(--warn)}
 
 /* METRIC CARDS */
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
@@ -58,6 +72,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .metric.warn .metric-val{color:var(--warn)}
 .metric.danger .metric-val{color:var(--danger)}
 .metric-sub{font-size:0.75rem;color:var(--muted);margin-top:4px}
+.skeleton{background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,0.05) 50%,var(--card2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;height:2rem;width:60%}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* CHARTS ROW */
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
@@ -112,8 +128,28 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 .alert-text strong{color:var(--danger)}
 .alert-time{font-size:0.72rem;color:var(--muted);margin-top:2px}
 
+/* CONFIG MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;width:480px;max-width:95vw}
+.modal h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:0.3rem}
+.modal p{font-size:0.83rem;color:var(--muted);margin-bottom:1.5rem}
+.modal label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:0.3rem;margin-top:1rem}
+.modal input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.8rem;border-radius:8px;font-size:0.85rem;font-family:'DM Sans',sans-serif;outline:none}
+.modal input:focus{border-color:rgba(79,255,176,0.4)}
+.modal-btns{display:flex;gap:8px;margin-top:1.5rem;justify-content:flex-end}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.5rem 1rem;border-radius:8px;font-size:0.85rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-save{background:var(--accent);color:#0A0E1A;padding:0.5rem 1.2rem;border-radius:8px;font-size:0.85rem;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.info-box{background:rgba(79,255,176,0.05);border:1px solid rgba(79,255,176,0.15);border-radius:8px;padding:0.8rem 1rem;font-size:0.78rem;color:var(--muted);margin-top:1rem;line-height:1.6}
+.info-box strong{color:var(--accent)}
+
 /* EMPTY STATE */
 .empty{text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem}
+.empty-icon{font-size:2rem;margin-bottom:0.5rem;opacity:0.4}
+
+/* ERROR STATE */
+.error-banner{background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:10px;padding:1rem 1.2rem;font-size:0.83rem;color:var(--danger);margin-bottom:1rem;display:none}
+.error-banner.show{display:block}
 
 @media(max-width:900px){
   .sidebar{display:none}
@@ -144,20 +180,44 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Reportes
   </a>
-  <a class="nav-item" href="#">
+  <a class="nav-item" href="#" onclick="abrirConfig()">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
     Configuración
   </a>
   <div class="sidebar-footer">
     <div class="user-info">
-      <div class="avatar">DO</div>
+      <div class="avatar" id="avatar-initials">DO</div>
       <div>
-        <div class="user-name">Docente</div>
-        <div class="user-plan">Plan Estándar</div>
+        <div class="user-name" id="sidebar-nombre">Docente</div>
+        <div class="user-plan" id="sidebar-plan">Plan Estándar</div>
       </div>
     </div>
   </div>
 </aside>
+
+<!-- CONFIG MODAL -->
+<div class="modal-overlay" id="modal-config">
+  <div class="modal">
+    <h2>Conexión a Supabase</h2>
+    <p>Ingresa las credenciales de tu proyecto Supabase para cargar datos reales en tiempo real.</p>
+    <label>Supabase URL</label>
+    <input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co" />
+    <label>Supabase Anon Key</label>
+    <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+    <label>Docente ID (UUID)</label>
+    <input type="text" id="cfg-docente" placeholder="d114d85c-fb7e-4a79-a446-fb90d652eec2" />
+    <div class="info-box">
+      <strong>¿Dónde encuentro esto?</strong><br>
+      URL y Key: Supabase → Settings → API<br>
+      Docente ID: tabla <code>docentes</code> → columna <code>id</code><br>
+      Los datos se guardan en tu navegador (localStorage).
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarConfig()">Cancelar</button>
+      <button class="btn-save" onclick="guardarConfig()">Guardar y conectar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MAIN CONTENT -->
 <main class="main">
@@ -166,39 +226,49 @@ tr:hover td{background:rgba(255,255,255,0.02)}
   <div class="topbar">
     <div class="topbar-left">
       <h1>Panel de seguimiento</h1>
-      <p>Período académico 2026 — Semestre I</p>
+      <p id="periodo-label">Período académico 2026 — Semestre I</p>
     </div>
     <div class="topbar-right">
-      <select class="select-curso" onchange="cambiarCurso(this.value)">
-        <option value="0">Todos los cursos</option>
-        <option value="1">Matemáticas — Grado 10</option>
-        <option value="2">Ciencias — Grado 9</option>
-        <option value="3">Tecnología — Grado 11</option>
+      <select class="select-curso" id="select-guia" onchange="filtrarPorGuia(this.value)">
+        <option value="">Todas las guías</option>
       </select>
+      <button class="btn-refresh" id="btn-refresh" onclick="cargarDatos()">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Actualizar
+      </button>
       <button class="btn-export" onclick="exportar()">↓ Exportar PDF</button>
     </div>
   </div>
+
+  <!-- STATUS -->
+  <div class="status-bar" id="status-bar">
+    <div class="status-dot loading" id="status-dot"></div>
+    <span id="status-text">Conectando a Supabase...</span>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-banner" id="error-banner"></div>
 
   <!-- MÉTRICAS -->
   <div class="metrics">
     <div class="metric green">
       <div class="metric-label">Entregaron</div>
-      <div class="metric-val" id="m-entregaron">54</div>
-      <div class="metric-sub">de 72 estudiantes</div>
+      <div class="metric-val" id="m-entregaron"><div class="skeleton"></div></div>
+      <div class="metric-sub" id="m-entregaron-sub">cargando...</div>
     </div>
     <div class="metric danger">
       <div class="metric-label">Pendientes</div>
-      <div class="metric-val" id="m-pendientes">18</div>
+      <div class="metric-val" id="m-pendientes"><div class="skeleton"></div></div>
       <div class="metric-sub">estudiantes sin entregar</div>
     </div>
     <div class="metric blue">
       <div class="metric-label">Cumplimiento</div>
-      <div class="metric-val" id="m-pct">75%</div>
+      <div class="metric-val" id="m-pct"><div class="skeleton"></div></div>
       <div class="metric-sub">promedio general</div>
     </div>
     <div class="metric warn">
       <div class="metric-label">Guías activas</div>
-      <div class="metric-val" id="m-guias">8</div>
+      <div class="metric-val" id="m-guias"><div class="skeleton"></div></div>
       <div class="metric-sub">en este período</div>
     </div>
   </div>
@@ -206,7 +276,7 @@ tr:hover td{background:rgba(255,255,255,0.02)}
   <!-- GRÁFICAS -->
   <div class="charts-row">
     <div class="chart-card">
-      <div class="chart-title">Cumplimiento por curso</div>
+      <div class="chart-title">Cumplimiento por guía</div>
       <div class="chart-sub">Porcentaje de entregas completadas</div>
       <div class="chart-wrap"><canvas id="barChart"></canvas></div>
     </div>
@@ -217,7 +287,7 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 
-  <!-- TABLA DE ESTUDIANTES -->
+  <!-- TABLA -->
   <div class="table-card">
     <div class="table-header">
       <div class="table-title">Detalle por estudiante</div>
@@ -232,97 +302,233 @@ tr:hover td{background:rgba(255,255,255,0.02)}
       <thead>
         <tr>
           <th>Estudiante</th>
-          <th>Curso</th>
-          <th>Última entrega</th>
-          <th>Actividades</th>
+          <th>Guía</th>
+          <th>Última verificación</th>
+          <th>Evidencias</th>
           <th>Progreso</th>
           <th>Estado</th>
         </tr>
       </thead>
-      <tbody id="tabla-body"></tbody>
+      <tbody id="tabla-body">
+        <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div>Cargando datos...</div></td></tr>
+      </tbody>
     </table>
   </div>
 
   <!-- GUÍAS + ALERTAS -->
   <div class="guias-row">
     <div class="guias-card">
-      <div class="chart-title" style="margin-bottom:0.3rem">Guías activas</div>
-      <div class="chart-sub" style="margin-bottom:1rem">Cumplimiento por guía</div>
-      <div id="guias-list"></div>
+      <div class="chart-title" style="margin-bottom:0.3rem">Resumen por guía</div>
+      <div class="chart-sub" style="margin-bottom:1rem">Cumplimiento por guía activa</div>
+      <div id="guias-list"><div class="empty"><div class="empty-icon">📋</div>Cargando guías...</div></div>
     </div>
     <div class="guias-card">
-      <div class="chart-title" style="margin-bottom:0.3rem">Alertas recientes</div>
-      <div class="chart-sub" style="margin-bottom:1rem">Estudiantes con bajo cumplimiento</div>
-      <div id="alertas-list"></div>
+      <div class="chart-title" style="margin-bottom:0.3rem">Alertas — Sin entregar</div>
+      <div class="chart-sub" style="margin-bottom:1rem">Estudiantes con 0% de entrega</div>
+      <div id="alertas-list"><div class="empty"><div class="empty-icon">🔔</div>Sin alertas</div></div>
     </div>
   </div>
 
 </main>
 
 <script>
-// ── DATOS DE EJEMPLO ──
-const estudiantes = [
-  {nombre:'Rodríguez, María',curso:'Matemáticas 10',fecha:'Hoy 9:14 am',actividades:'5/5',pct:100,estado:'entregado'},
-  {nombre:'García, Carlos',curso:'Ciencias 9',fecha:'Hoy 8:52 am',actividades:'4/5',pct:80,estado:'parcial'},
-  {nombre:'López, Sofía',curso:'Tecnología 11',fecha:'Ayer',actividades:'5/5',pct:100,estado:'entregado'},
-  {nombre:'Vargas, Juan',curso:'Matemáticas 10',fecha:'—',actividades:'0/5',pct:0,estado:'pendiente'},
-  {nombre:'Torres, Laura',curso:'Ciencias 9',fecha:'—',actividades:'1/5',pct:20,estado:'pendiente'},
-  {nombre:'Mejía, Pedro',curso:'Tecnología 11',fecha:'Hoy 7:30 am',actividades:'5/5',pct:100,estado:'entregado'},
-  {nombre:'Sánchez, Ana',curso:'Matemáticas 10',fecha:'Ayer',actividades:'3/5',pct:60,estado:'parcial'},
-  {nombre:'Martínez, Luis',curso:'Ciencias 9',fecha:'—',actividades:'0/5',pct:0,estado:'pendiente'},
-  {nombre:'Herrera, Diana',curso:'Tecnología 11',fecha:'Hoy 10:05 am',actividades:'5/5',pct:100,estado:'entregado'},
-  {nombre:'Castro, Andrés',curso:'Matemáticas 10',fecha:'Hace 2 días',actividades:'4/5',pct:80,estado:'parcial'},
-  {nombre:'Ramírez, Valentina',curso:'Ciencias 9',fecha:'Hoy 8:00 am',actividades:'5/5',pct:100,estado:'entregado'},
-  {nombre:'Moreno, Felipe',curso:'Tecnología 11',fecha:'—',actividades:'2/5',pct:40,estado:'pendiente'},
-];
+// ══════════════════════════════════════════════════════
+//  CONFIGURACIÓN — se guarda en localStorage
+// ══════════════════════════════════════════════════════
+const CFG_KEY = 'guiabot_cfg';
 
-const guias = [
-  {nombre:'Guía #1 — Fundamentos',actividades:'5 actividades',pct:92},
-  {nombre:'Guía #2 — Aplicación',actividades:'4 actividades',pct:75},
-  {nombre:'Guía #3 — Evaluación',actividades:'6 actividades',pct:68},
-  {nombre:'Guía #4 — Proyecto final',actividades:'8 actividades',pct:45},
-];
+function getCfg() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; } catch { return {}; }
+}
+function saveCfg(cfg) {
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+}
 
-const alertas = [
-  {nombre:'Vargas, Juan',msg:'Sin ninguna entrega — Matemáticas 10',tiempo:'Hace 5 días'},
-  {nombre:'Martínez, Luis',msg:'Sin ninguna entrega — Ciencias 9',tiempo:'Hace 3 días'},
-  {nombre:'Torres, Laura',msg:'Solo 1 de 5 actividades — Ciencias 9',tiempo:'Hace 2 días'},
-  {nombre:'Moreno, Felipe',msg:'2 de 5 actividades — Tecnología 11',tiempo:'Ayer'},
-];
-
-// ── RENDER TABLA ──
-let filtroActual = 'todos';
-let busquedaActual = '';
-
-function renderTabla() {
-  const tbody = document.getElementById('tabla-body');
-  let datos = estudiantes.filter(e => {
-    const matchFiltro = filtroActual === 'todos' || e.estado === filtroActual;
-    const matchBusqueda = e.nombre.toLowerCase().includes(busquedaActual.toLowerCase());
-    return matchFiltro && matchBusqueda;
-  });
-  if(datos.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No se encontraron estudiantes</div></td></tr>';
+function abrirConfig() {
+  const cfg = getCfg();
+  document.getElementById('cfg-url').value = cfg.url || '';
+  document.getElementById('cfg-key').value = cfg.key || '';
+  document.getElementById('cfg-docente').value = cfg.docenteId || '';
+  document.getElementById('modal-config').classList.add('open');
+}
+function cerrarConfig() {
+  document.getElementById('modal-config').classList.remove('open');
+}
+function guardarConfig() {
+  const cfg = {
+    url: document.getElementById('cfg-url').value.trim(),
+    key: document.getElementById('cfg-key').value.trim(),
+    docenteId: document.getElementById('cfg-docente').value.trim(),
+  };
+  if (!cfg.url || !cfg.key || !cfg.docenteId) {
+    alert('Completa todos los campos.');
     return;
   }
-  tbody.innerHTML = datos.map(e => {
-    const badgeClass = e.estado === 'entregado' ? 'entregado' : e.estado === 'parcial' ? 'parcial' : 'pendiente';
-    const badgeLabel = e.estado === 'entregado' ? 'Entregó' : e.estado === 'parcial' ? 'Parcial' : 'Pendiente';
-    const fillClass = e.pct >= 80 ? 'fill-green' : e.pct >= 40 ? 'fill-warn' : 'fill-danger';
-    return `<tr>
-      <td style="font-weight:500">${e.nombre}</td>
-      <td style="color:var(--muted)">${e.curso}</td>
-      <td style="color:var(--muted);font-size:0.8rem">${e.fecha}</td>
-      <td>${e.actividades}</td>
-      <td style="min-width:100px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="prog-bar" style="flex:1"><div class="prog-fill ${fillClass}" style="width:${e.pct}%"></div></div>
-          <span style="font-size:0.75rem;color:var(--muted);min-width:28px">${e.pct}%</span>
-        </div>
-      </td>
-      <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
-    </tr>`;
-  }).join('');
+  saveCfg(cfg);
+  cerrarConfig();
+  cargarDatos();
+}
+
+// ══════════════════════════════════════════════════════
+//  SUPABASE CLIENT
+// ══════════════════════════════════════════════════════
+function getClient() {
+  const cfg = getCfg();
+  if (!cfg.url || !cfg.key) return null;
+  return supabase.createClient(cfg.url, cfg.key);
+}
+
+// ══════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════════════════
+let todosLosResultados = [];  // Raw data de Supabase
+let filtroActual = 'todos';
+let busquedaActual = '';
+let guiaFiltro = '';
+let barChartInstance = null;
+let donutChartInstance = null;
+
+// ══════════════════════════════════════════════════════
+//  CARGAR DATOS DESDE SUPABASE
+// ══════════════════════════════════════════════════════
+async function cargarDatos() {
+  const cfg = getCfg();
+
+  if (!cfg.url || !cfg.key || !cfg.docenteId) {
+    setStatus('offline', '⚙️ Configura la conexión a Supabase primero');
+    mostrarError('No hay conexión configurada. Haz clic en Configuración → Configuración para ingresar tus credenciales de Supabase.');
+    return;
+  }
+
+  setStatus('loading', 'Conectando a Supabase...');
+  setBtnLoading(true);
+  ocultarError();
+
+  try {
+    const db = getClient();
+
+    // 1. Datos del docente
+    const { data: docente, error: errDoc } = await db
+      .from('docentes')
+      .select('nombre, plan, email')
+      .eq('id', cfg.docenteId)
+      .single();
+
+    if (errDoc) throw new Error('No se pudo cargar el docente: ' + errDoc.message);
+
+    // Actualizar sidebar
+    document.getElementById('sidebar-nombre').textContent = docente.nombre || 'Docente';
+    document.getElementById('sidebar-plan').textContent = 'Plan ' + capitalizar(docente.plan || 'estándar');
+    const iniciales = (docente.nombre || 'DO').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+    document.getElementById('avatar-initials').textContent = iniciales;
+
+    // 2. Verificaciones del docente (tabla donde el bot guarda los resultados)
+    const { data: verificaciones, error: errVer } = await db
+      .from('verificaciones')
+      .select('*')
+      .eq('docente_id', cfg.docenteId)
+      .order('fecha', { ascending: false });
+
+    if (errVer) throw new Error('No se pudo cargar verificaciones: ' + errVer.message);
+
+    // 3. Guías activas del docente
+    const { data: guias, error: errGuias } = await db
+      .from('guias')
+      .select('id, nombre')
+      .eq('docente_id', cfg.docenteId)
+      .eq('activa', true);
+
+    if (errGuias) throw new Error('No se pudo cargar guías: ' + errGuias.message);
+
+    todosLosResultados = procesarVerificaciones(verificaciones || []);
+
+    // Poblar selector de guías
+    poblarSelectorGuias(guias || [], verificaciones || []);
+
+    // Renderizar todo
+    renderTodo();
+
+    const ahora = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    setStatus('online', `Conectado · Última actualización: ${ahora} · ${(verificaciones || []).length} registros`);
+
+  } catch (err) {
+    console.error(err);
+    setStatus('offline', 'Error de conexión');
+    mostrarError(err.message);
+  } finally {
+    setBtnLoading(false);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  PROCESAR DATOS CRUDOS DE LA TABLA verificaciones
+//  Estructura: { docente_id, estudiante, guia, evidencia, entregado, fecha }
+// ══════════════════════════════════════════════════════
+function procesarVerificaciones(rows) {
+  // Agrupar por estudiante + guía
+  const mapa = {};
+  for (const r of rows) {
+    const k = `${r.estudiante}|||${r.guia}`;
+    if (!mapa[k]) {
+      mapa[k] = {
+        nombre: r.estudiante,
+        guia: r.guia,
+        fecha: r.fecha,
+        evidencias: [],
+        entregadas: 0,
+        total: 0,
+      };
+    }
+    // Solo tomar el registro más reciente por evidencia
+    const yaExiste = mapa[k].evidencias.find(e => e.nombre === r.evidencia);
+    if (!yaExiste) {
+      mapa[k].evidencias.push({ nombre: r.evidencia, entregado: r.entregado });
+      mapa[k].total++;
+      if (r.entregado) mapa[k].entregadas++;
+    }
+    // Actualizar fecha con la más reciente
+    if (r.fecha > mapa[k].fecha) mapa[k].fecha = r.fecha;
+  }
+
+  return Object.values(mapa).map(item => {
+    const pct = item.total > 0 ? Math.round(item.entregadas / item.total * 100) : 0;
+    let estado = pct === 0 ? 'pendiente' : pct === 100 ? 'entregado' : 'parcial';
+    return { ...item, pct, estado };
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  POBLAR SELECTOR DE GUÍAS
+// ══════════════════════════════════════════════════════
+function poblarSelectorGuias(guias, verificaciones) {
+  const select = document.getElementById('select-guia');
+  const guiasEnVerif = [...new Set(verificaciones.map(v => v.guia))];
+  const todasGuias = guias.length > 0
+    ? guias.map(g => g.nombre)
+    : guiasEnVerif;
+
+  select.innerHTML = '<option value="">Todas las guías</option>';
+  todasGuias.forEach(nombre => {
+    const opt = document.createElement('option');
+    opt.value = nombre;
+    opt.textContent = nombre;
+    select.appendChild(opt);
+  });
+
+  // Actualizar métrica de guías activas
+  document.getElementById('m-guias').textContent = todasGuias.length;
+}
+
+// ══════════════════════════════════════════════════════
+//  FILTROS
+// ══════════════════════════════════════════════════════
+function getDatosFiltrados() {
+  return todosLosResultados.filter(e => {
+    const matchEstado = filtroActual === 'todos' || e.estado === filtroActual;
+    const matchBusqueda = e.nombre.toLowerCase().includes(busquedaActual.toLowerCase());
+    const matchGuia = !guiaFiltro || e.guia === guiaFiltro;
+    return matchEstado && matchBusqueda && matchGuia;
+  });
 }
 
 function filtrar(tipo, btn) {
@@ -337,15 +543,103 @@ function filtrarTabla(val) {
   renderTabla();
 }
 
-// ── RENDER GUÍAS ──
-function renderGuias() {
-  document.getElementById('guias-list').innerHTML = guias.map(g => {
+function filtrarPorGuia(val) {
+  guiaFiltro = val;
+  renderTodo();
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER PRINCIPAL
+// ══════════════════════════════════════════════════════
+function renderTodo() {
+  const datos = getDatosFiltrados();
+  renderMetricas(datos);
+  renderTabla();
+  renderGuias(datos);
+  renderAlertas(datos);
+  renderCharts(datos);
+}
+
+// ══════════════════════════════════════════════════════
+//  MÉTRICAS
+// ══════════════════════════════════════════════════════
+function renderMetricas(datos) {
+  const entregaron = datos.filter(e => e.estado === 'entregado').length;
+  const pendientes = datos.filter(e => e.estado === 'pendiente').length;
+  const total = datos.length;
+  const pctGeneral = total > 0
+    ? Math.round(datos.reduce((acc, e) => acc + e.pct, 0) / total)
+    : 0;
+
+  document.getElementById('m-entregaron').textContent = entregaron;
+  document.getElementById('m-entregaron-sub').textContent = `de ${total} registros`;
+  document.getElementById('m-pendientes').textContent = pendientes;
+  document.getElementById('m-pct').textContent = pctGeneral + '%';
+}
+
+// ══════════════════════════════════════════════════════
+//  TABLA
+// ══════════════════════════════════════════════════════
+function renderTabla() {
+  const tbody = document.getElementById('tabla-body');
+  const datos = getDatosFiltrados();
+
+  if (!datos.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>No se encontraron registros</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = datos.map(e => {
+    const badgeClass = e.estado === 'entregado' ? 'entregado' : e.estado === 'parcial' ? 'parcial' : 'pendiente';
+    const badgeLabel = e.estado === 'entregado' ? 'Entregó' : e.estado === 'parcial' ? 'Parcial' : 'Pendiente';
+    const fillClass = e.pct >= 80 ? 'fill-green' : e.pct >= 40 ? 'fill-warn' : 'fill-danger';
+    const fechaDisplay = e.fecha ? formatFecha(e.fecha) : '—';
+    const actDisplay = `${e.entregadas}/${e.total}`;
+    return `<tr>
+      <td style="font-weight:500">${e.nombre}</td>
+      <td style="color:var(--muted);font-size:0.8rem">${e.guia}</td>
+      <td style="color:var(--muted);font-size:0.8rem">${fechaDisplay}</td>
+      <td>${actDisplay}</td>
+      <td style="min-width:100px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="prog-bar" style="flex:1"><div class="prog-fill ${fillClass}" style="width:${e.pct}%"></div></div>
+          <span style="font-size:0.75rem;color:var(--muted);min-width:28px">${e.pct}%</span>
+        </div>
+      </td>
+      <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  GUÍAS
+// ══════════════════════════════════════════════════════
+function renderGuias(datos) {
+  // Agrupar por guía
+  const porGuia = {};
+  for (const e of datos) {
+    if (!porGuia[e.guia]) porGuia[e.guia] = [];
+    porGuia[e.guia].push(e.pct);
+  }
+
+  const guiasArr = Object.entries(porGuia).map(([nombre, pcts]) => ({
+    nombre,
+    pct: Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length),
+    count: pcts.length,
+  }));
+
+  if (!guiasArr.length) {
+    document.getElementById('guias-list').innerHTML = `<div class="empty"><div class="empty-icon">📋</div>No hay guías con datos</div>`;
+    return;
+  }
+
+  document.getElementById('guias-list').innerHTML = guiasArr.map(g => {
     const pctClass = g.pct >= 80 ? 'pct-green' : g.pct >= 50 ? 'pct-warn' : 'pct-danger';
     const fillClass = g.pct >= 80 ? 'fill-green' : g.pct >= 50 ? 'fill-warn' : 'fill-danger';
     return `<div class="guia-item">
       <div class="guia-info">
         <div class="guia-name">${g.nombre}</div>
-        <div class="guia-meta">${g.actividades}</div>
+        <div class="guia-meta">${g.count} estudiante${g.count !== 1 ? 's' : ''}</div>
         <div class="prog-bar" style="margin-top:6px"><div class="prog-fill ${fillClass}" style="width:${g.pct}%"></div></div>
       </div>
       <div class="guia-pct ${pctClass}" style="margin-left:1rem">${g.pct}%</div>
@@ -353,32 +647,57 @@ function renderGuias() {
   }).join('');
 }
 
-// ── RENDER ALERTAS ──
-function renderAlertas() {
+// ══════════════════════════════════════════════════════
+//  ALERTAS
+// ══════════════════════════════════════════════════════
+function renderAlertas(datos) {
+  const alertas = datos
+    .filter(e => e.pct < 40)
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 8);
+
+  if (!alertas.length) {
+    document.getElementById('alertas-list').innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sin alertas críticas</div>`;
+    return;
+  }
+
   document.getElementById('alertas-list').innerHTML = alertas.map(a =>
     `<div class="alert-item">
       <div class="alert-dot"></div>
       <div>
-        <div class="alert-text"><strong>${a.nombre}</strong> — ${a.msg}</div>
-        <div class="alert-time">${a.tiempo}</div>
+        <div class="alert-text"><strong>${a.nombre}</strong> — ${a.guia}</div>
+        <div class="alert-time">${a.entregadas}/${a.total} evidencias · ${a.pct}% cumplimiento</div>
       </div>
     </div>`
   ).join('');
 }
 
-// ── CHARTS ──
-function initCharts() {
+// ══════════════════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════════════════
+function renderCharts(datos) {
   const fontColor = '#7B8BAC';
   const gridColor = 'rgba(255,255,255,0.05)';
 
-  // BAR
-  new Chart(document.getElementById('barChart'), {
+  // Agrupar por guía para bar chart
+  const porGuia = {};
+  for (const e of datos) {
+    if (!porGuia[e.guia]) porGuia[e.guia] = [];
+    porGuia[e.guia].push(e.pct);
+  }
+  const guiaLabels = Object.keys(porGuia).map(g => g.length > 20 ? g.slice(0, 20) + '…' : g);
+  const guiaValues = Object.values(porGuia).map(pcts => Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length));
+
+  const colores = ['rgba(79,255,176,0.7)','rgba(0,201,255,0.7)','rgba(255,181,71,0.7)','rgba(255,107,107,0.7)','rgba(167,139,250,0.7)'];
+
+  if (barChartInstance) barChartInstance.destroy();
+  barChartInstance = new Chart(document.getElementById('barChart'), {
     type: 'bar',
     data: {
-      labels: ['Matemáticas 10', 'Ciencias 9', 'Tecnología 11'],
+      labels: guiaLabels.length ? guiaLabels : ['Sin datos'],
       datasets: [{
-        data: [78, 65, 82],
-        backgroundColor: ['rgba(79,255,176,0.7)', 'rgba(0,201,255,0.7)', 'rgba(255,181,71,0.7)'],
+        data: guiaValues.length ? guiaValues : [0],
+        backgroundColor: guiaLabels.map((_, i) => colores[i % colores.length]),
         borderRadius: 6,
         borderSkipped: false,
       }]
@@ -388,19 +707,24 @@ function initCharts() {
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: fontColor, font: { size: 11 } }, grid: { color: gridColor }, border: { display: false } },
-        y: { ticks: { color: fontColor, font: { size: 11 }, callback: v => v + '%' }, grid: { color: gridColor }, border: { display: false }, max: 100 }
+        y: { ticks: { color: fontColor, font: { size: 11 }, callback: v => v + '%' }, grid: { color: gridColor }, border: { display: false }, max: 100, min: 0 }
       }
     }
   });
 
-  // DONUT
-  new Chart(document.getElementById('donutChart'), {
+  // Donut
+  const entregaron = datos.filter(e => e.estado === 'entregado').length;
+  const parcial = datos.filter(e => e.estado === 'parcial').length;
+  const pendientes = datos.filter(e => e.estado === 'pendiente').length;
+
+  if (donutChartInstance) donutChartInstance.destroy();
+  donutChartInstance = new Chart(document.getElementById('donutChart'), {
     type: 'doughnut',
     data: {
       labels: ['Entregaron', 'Parcial', 'Pendientes'],
       datasets: [{
-        data: [54, 10, 8],
-        backgroundColor: ['rgba(79,255,176,0.8)', 'rgba(255,181,71,0.8)', 'rgba(255,107,107,0.8)'],
+        data: [entregaron, parcial, pendientes],
+        backgroundColor: ['rgba(79,255,176,0.8)','rgba(255,181,71,0.8)','rgba(255,107,107,0.8)'],
         borderColor: '#161D2F',
         borderWidth: 3,
         hoverOffset: 6
@@ -415,32 +739,80 @@ function initCharts() {
   });
 }
 
-// ── CAMBIAR CURSO ──
-function cambiarCurso(val) {
-  // Simula cambio de datos según curso
-  const datos = [
-    {e:54,p:18,pct:'75%',g:8},
-    {e:22,p:8,pct:'73%',g:3},
-    {e:18,p:7,pct:'72%',g:2},
-    {e:14,p:3,pct:'82%',g:3},
-  ];
-  const d = datos[val];
-  document.getElementById('m-entregaron').textContent = d.e;
-  document.getElementById('m-pendientes').textContent = d.p;
-  document.getElementById('m-pct').textContent = d.pct;
-  document.getElementById('m-guias').textContent = d.g;
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function setStatus(tipo, msg) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + tipo;
+  document.getElementById('status-text').textContent = msg;
 }
 
-// ── EXPORTAR ──
+function setBtnLoading(loading) {
+  document.getElementById('btn-refresh').classList.toggle('loading', loading);
+}
+
+function mostrarError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = '⚠️ ' + msg;
+  el.classList.add('show');
+}
+
+function ocultarError() {
+  document.getElementById('error-banner').classList.remove('show');
+}
+
+function capitalizar(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+}
+
+function formatFecha(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const ahora = new Date();
+  const diff = Math.floor((ahora - d) / 1000 / 60);
+  if (diff < 2) return 'Ahora';
+  if (diff < 60) return `Hace ${diff} min`;
+  const horas = Math.floor(diff / 60);
+  if (horas < 24) return `Hace ${horas}h`;
+  const dias = Math.floor(horas / 24);
+  if (dias === 1) return 'Ayer';
+  if (dias < 7) return `Hace ${dias} días`;
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORTAR
+// ══════════════════════════════════════════════════════
 function exportar() {
-  alert('Función de exportación PDF disponible en el plan Estándar y Avanzado.\n\nEn la versión completa esto genera el reporte automáticamente.');
+  window.print();
 }
 
-// ── INIT ──
-renderTabla();
-renderGuias();
-renderAlertas();
-initCharts();
+// ══════════════════════════════════════════════════════
+//  AUTO-REFRESH CADA 5 MINUTOS
+// ══════════════════════════════════════════════════════
+setInterval(() => {
+  const cfg = getCfg();
+  if (cfg.url && cfg.key && cfg.docenteId) cargarDatos();
+}, 5 * 60 * 1000);
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+(function init() {
+  const cfg = getCfg();
+  if (!cfg.url || !cfg.key || !cfg.docenteId) {
+    setStatus('offline', '⚙️ Sin conexión — Configura Supabase en Configuración');
+    mostrarError('Para ver datos reales, ve a Configuración → Configuración e ingresa tu URL de Supabase, la Anon Key y tu Docente ID.');
+    // Mostrar datos vacíos
+    document.getElementById('m-entregaron').textContent = '—';
+    document.getElementById('m-pendientes').textContent = '—';
+    document.getElementById('m-pct').textContent = '—';
+    document.getElementById('m-guias').textContent = '—';
+    return;
+  }
+  cargarDatos();
+})();
 </script>
 </body>
 </html>
