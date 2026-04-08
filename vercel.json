@@ -2,24 +2,26 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.html",
+      "src": "*.html",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/dashboard.html"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" }
-      ]
     }
   ]
 }
