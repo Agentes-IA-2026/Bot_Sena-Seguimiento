@@ -560,7 +560,7 @@ async function cargarDatos(){
     document.getElementById('sb-nombre').textContent=doc.nombre||'Docente';
     document.getElementById('sb-plan').textContent='Plan '+capitalizar(doc.plan||'estándar');
 
-    const{data:rows,error:eR}=await db.from('verificaciones').select('*').eq('docente_id',c.docenteId).order('ficha').order('estudiante').order('guia').order('evidencia');
+    const{data:rows,error:eR}=await db.from('verificaciones').select('*').eq('docente_id',c.docenteId).order('ficha').order('estudiante').order('guia').order('evidencia').limit(500000);
     if(eR)throw new Error('Error: '+eR.message);
 
     FICHAS={};
