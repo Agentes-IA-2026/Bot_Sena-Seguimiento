@@ -4,500 +4,570 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GuíaBot — Seguimiento académico automatizado</title>
-<meta name="description" content="GuíaBot verifica automáticamente el cumplimiento de entregables según el nombre del archivo. Sin planillas manuales, sin tiempo perdido.">
-<meta property="og:title" content="GuíaBot — Seguimiento académico automatizado">
-<meta property="og:description" content="Tu asistente para el seguimiento de actividades académicas. Automatiza la verificación de entregas en segundos.">
-<meta property="og:type" content="website">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<meta name="description" content="GuíaBot verifica automáticamente el cumplimiento de entregables. Sin planillas manuales, sin tiempo perdido.">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0A0E1A;--bg2:#111827;--card:#161D2F;
-  --accent:#4FFFB0;--accent2:#00C9FF;
-  --text:#F0F4FF;--muted:#7B8BAC;
-  --border:rgba(255,255,255,0.07);
+  --bg:#05080F;--bg2:#090D18;--card:#0D1320;--card2:#111827;
+  --accent:#00FF94;--accent2:#00C9FF;--warn:#FFB800;--danger:#FF4D4D;
+  --text:#EFF3FF;--muted:#6B7A99;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --font:'Bricolage Grotesque',sans-serif;--mono:'DM Mono',monospace;
 }
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
- 
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6;overflow-x:hidden}
+
+/* NOISE */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.5}
+
 /* NAV */
-nav{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(10,14,26,0.93);backdrop-filter:blur(14px)}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:-0.5px;text-decoration:none;color:var(--text)}
+nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(5,8,15,0.92);backdrop-filter:blur(20px)}
+.logo{font-family:var(--font);font-weight:800;font-size:1.35rem;letter-spacing:-0.5px;text-decoration:none;color:var(--text)}
 .logo span{color:var(--accent)}
 .nav-links{display:flex;gap:2rem;list-style:none}
-.nav-links a{color:var(--muted);text-decoration:none;font-size:0.9rem;transition:color 0.2s}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.88rem;font-weight:500;transition:color 0.2s}
 .nav-links a:hover{color:var(--text)}
-.nav-cta{background:var(--accent);color:#0A0E1A;padding:0.5rem 1.3rem;border-radius:8px;font-weight:700;font-size:0.88rem;text-decoration:none;transition:box-shadow 0.2s,transform 0.2s}
-.nav-cta:hover{box-shadow:0 4px 16px rgba(79,255,176,0.3);transform:translateY(-1px)}
-@media(max-width:600px){.nav-links{display:none}}
- 
+.nav-cta{background:var(--accent);color:#05080F;padding:0.5rem 1.4rem;border-radius:8px;font-weight:700;font-size:0.85rem;text-decoration:none;transition:all 0.2s}
+.nav-cta:hover{box-shadow:0 0 20px rgba(0,255,148,0.3);transform:translateY(-1px)}
+@media(max-width:640px){.nav-links{display:none}}
+
 /* HERO */
-.hero{padding:8rem 6% 5rem;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-180px;left:50%;transform:translateX(-50%);width:700px;height:700px;background:radial-gradient(circle,rgba(79,255,176,0.07) 0%,transparent 70%);pointer-events:none}
-.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(79,255,176,0.08);border:1px solid rgba(79,255,176,0.2);border-radius:100px;padding:0.4rem 1rem;font-size:0.8rem;color:var(--accent);margin-bottom:2rem;font-weight:500}
-.badge-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.75)}}
-h1{font-family:'Syne',sans-serif;font-size:clamp(2.4rem,6vw,4.4rem);font-weight:800;line-height:1.06;letter-spacing:-2px;max-width:800px;margin:0 auto 1.5rem}
-h1 .hl{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:1.1rem;color:var(--muted);max-width:500px;margin:0 auto 2.5rem;font-weight:300}
-.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
-.btn-primary{background:var(--accent);color:#0A0E1A;padding:0.85rem 2rem;border-radius:10px;font-weight:700;font-size:1rem;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,255,176,0.25)}
-.btn-ghost{border:1px solid var(--border);color:var(--text);padding:0.85rem 2rem;border-radius:10px;font-size:1rem;text-decoration:none;transition:border-color 0.2s}
-.btn-ghost:hover{border-color:rgba(255,255,255,0.25)}
- 
-/* STATS */
-.stats{display:flex;justify-content:center;gap:3rem;padding:3rem 6%;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap}
-.stat{text-align:center}
-.stat-n{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;color:var(--accent)}
-.stat-l{font-size:0.83rem;color:var(--muted);margin-top:2px}
- 
-/* SECTIONS */
-.section{padding:5.5rem 6%}
-.section-label{font-size:0.78rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:0.8rem;font-weight:500}
-h2{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;letter-spacing:-1px;margin-bottom:0.8rem}
-.section-sub{color:var(--muted);font-size:1rem;max-width:480px;margin-bottom:3.5rem;font-weight:300}
- 
-/* STEPS */
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.5rem}
-.step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.8rem;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
-.step:hover{border-color:rgba(79,255,176,0.25);transform:translateY(-3px)}
-.step-num{font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;color:rgba(79,255,176,0.07);position:absolute;top:0.4rem;right:1rem;line-height:1}
-.step-icon{width:40px;height:40px;background:rgba(79,255,176,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
-.step-icon svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.step h3{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:0.5rem}
-.step p{font-size:0.88rem;color:var(--muted);line-height:1.6}
- 
-/* DEMO */
-.demo-wrap{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;max-width:600px;margin:3rem auto 0}
-.demo-bar{background:#1C2438;padding:0.8rem 1.2rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.hero{padding:7rem 6% 4rem;text-align:center;position:relative;overflow:hidden}
+.hero-glow{position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,rgba(0,255,148,0.06) 0%,transparent 65%);pointer-events:none}
+.hero-glow2{position:absolute;top:50px;left:20%;width:400px;height:400px;background:radial-gradient(ellipse,rgba(0,201,255,0.04) 0%,transparent 65%);pointer-events:none}
+
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,148,0.07);border:1px solid rgba(0,255,148,0.18);border-radius:100px;padding:0.38rem 1rem;font-size:0.78rem;color:var(--accent);margin-bottom:2rem;font-weight:600;letter-spacing:0.3px;position:relative;z-index:1}
+.pulse{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.6)}}
+
+h1{font-size:clamp(2.6rem,6.5vw,5rem);font-weight:800;line-height:1.02;letter-spacing:-2.5px;max-width:860px;margin:0 auto 1.4rem;position:relative;z-index:1}
+.hl{background:linear-gradient(120deg,var(--accent) 0%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:520px;margin:0 auto 2.5rem;font-weight:400;line-height:1.7;position:relative;z-index:1}
+
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+.btn-p{background:var(--accent);color:#05080F;padding:0.9rem 2.2rem;border-radius:10px;font-weight:700;font-size:0.95rem;text-decoration:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,255,148,0.25)}
+.btn-g{border:1px solid var(--border2);color:var(--text);padding:0.9rem 2.2rem;border-radius:10px;font-size:0.95rem;text-decoration:none;transition:all 0.2s;font-weight:500}
+.btn-g:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.03)}
+
+/* TICKER */
+.ticker-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1rem 0;overflow:hidden;position:relative}
+.ticker{display:flex;gap:3rem;width:max-content;animation:ticker 25s linear infinite}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{font-size:0.82rem;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.ticker-item span{color:var(--accent);font-weight:700}
+
+/* CALCULADOR */
+.calc-section{padding:5rem 6%;position:relative;z-index:1}
+.section-eyebrow{font-size:0.72rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:0.8rem;font-weight:600}
+h2{font-size:clamp(1.9rem,4vw,2.9rem);font-weight:800;letter-spacing:-1.5px;margin-bottom:0.8rem;line-height:1.1}
+.section-sub{color:var(--muted);font-size:0.95rem;max-width:480px;margin-bottom:3rem;line-height:1.7}
+
+.calc-box{background:var(--card);border:1px solid var(--border2);border-radius:20px;overflow:hidden;max-width:820px;margin:0 auto}
+.calc-header{padding:1.6rem 2rem;border-bottom:1px solid var(--border);background:rgba(0,255,148,0.03)}
+.calc-header h3{font-size:1rem;font-weight:700;margin-bottom:4px}
+.calc-header p{font-size:0.82rem;color:var(--muted)}
+.calc-body{padding:2rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+@media(max-width:640px){.calc-body{grid-template-columns:1fr}}
+.calc-inputs{display:flex;flex-direction:column;gap:1.2rem}
+.calc-field label{display:block;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:600}
+.calc-field input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+.calc-field .val{font-family:var(--mono);font-size:1.1rem;font-weight:500;color:var(--accent);margin-top:4px}
+.calc-result{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:1.4rem;display:flex;flex-direction:column;gap:1rem}
+.res-row{display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border)}
+.res-row:last-child{border-bottom:none}
+.res-label{font-size:0.8rem;color:var(--muted)}
+.res-val{font-family:var(--mono);font-size:0.95rem;font-weight:600}
+.res-val.bad{color:var(--danger)}
+.res-val.good{color:var(--accent)}
+.res-val.savings{color:var(--warn);font-size:1.1rem}
+.calc-conclusion{grid-column:1/-1;background:linear-gradient(135deg,rgba(0,255,148,0.06),rgba(0,201,255,0.06));border:1px solid rgba(0,255,148,0.15);border-radius:12px;padding:1.2rem 1.6rem;display:flex;align-items:center;gap:14px}
+.conclusion-icon{font-size:1.8rem;flex-shrink:0}
+.conclusion-text{font-size:0.88rem;line-height:1.6;color:var(--muted)}
+.conclusion-text strong{color:var(--text)}
+
+/* PRODUCTOS */
+.products-section{padding:5rem 6%;background:var(--bg2);position:relative;z-index:1}
+.products-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:860px;margin:0 auto}
+@media(max-width:700px){.products-grid{grid-template-columns:1fr}}
+
+.product-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;transition:transform 0.2s,border-color 0.2s;position:relative}
+.product-card:hover{transform:translateY(-4px)}
+.product-card.featured{border-color:rgba(0,201,255,0.3)}
+.product-card.featured::before{content:'IA INCLUIDA';position:absolute;top:16px;right:16px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#05080F;font-size:0.62rem;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:1px}
+
+.product-top{padding:1.8rem 1.8rem 1.4rem;border-bottom:1px solid var(--border)}
+.product-line{font-size:0.68rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.product-name{font-size:1.3rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:6px}
+.product-card:first-child .product-name{color:var(--accent)}
+.product-card.featured .product-name{color:var(--accent2)}
+.product-desc{font-size:0.82rem;color:var(--muted);line-height:1.55}
+
+.product-price{padding:1.2rem 1.8rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)}
+.price-row{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
+.price-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;display:block}
+.price-amount{font-family:var(--mono);font-size:1.8rem;font-weight:700;line-height:1}
+.product-card:first-child .price-amount{color:var(--accent)}
+.product-card.featured .price-amount{color:var(--accent2)}
+.price-period{font-size:0.8rem;color:var(--muted)}
+.price-note{font-size:0.75rem;color:var(--muted);margin-top:4px}
+.price-note::before{content:'+ ';color:var(--accent)}
+
+.product-feats{padding:1.4rem 1.8rem;flex:1}
+.product-feats ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.product-feats li{font-size:0.83rem;color:var(--muted);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.product-feats li.on{color:var(--text)}
+.product-feats li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:1px}
+.product-feats li.ai::before{content:'🧠';font-size:0.75rem}
+.product-feats li.off{opacity:0.35}
+.product-feats li.off::before{content:'—';color:var(--muted)}
+
+.product-cta{padding:0 1.8rem 1.8rem}
+.product-btn{display:block;text-align:center;padding:0.8rem;border-radius:10px;font-weight:700;font-size:0.88rem;text-decoration:none;transition:all 0.2s;margin-top:1rem;font-family:var(--font)}
+.product-btn.outline{background:transparent;border:1px solid var(--border2);color:var(--text)}
+.product-btn.outline:hover{border-color:rgba(0,255,148,0.4);color:var(--accent)}
+.product-btn.solid{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#05080F}
+.product-btn.solid:hover{box-shadow:0 4px 24px rgba(0,201,255,0.3);transform:translateY(-1px)}
+
+/* COMPARATIVA */
+.compare-note{background:rgba(0,255,148,0.04);border:1px solid rgba(0,255,148,0.12);border-radius:12px;padding:1rem 1.4rem;max-width:860px;margin:1.5rem auto 0;display:flex;gap:12px;align-items:flex-start}
+.compare-note-icon{width:20px;height:20px;background:rgba(0,255,148,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);font-weight:700;flex-shrink:0;margin-top:2px}
+.compare-note p{font-size:0.82rem;color:var(--muted);line-height:1.6}
+.compare-note p strong{color:var(--text)}
+
+/* CÓMO FUNCIONA */
+.how-section{padding:5rem 6%;position:relative;z-index:1}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.2rem;max-width:900px;margin:0 auto}
+.step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.6rem;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
+.step:hover{border-color:var(--border2);transform:translateY(-3px)}
+.step-n{font-family:var(--mono);font-size:3rem;font-weight:700;color:rgba(0,255,148,0.06);position:absolute;top:0.5rem;right:1rem;line-height:1}
+.step-icon{width:38px;height:38px;background:rgba(0,255,148,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:18px}
+.step h3{font-size:0.95rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.3px}
+.step p{font-size:0.83rem;color:var(--muted);line-height:1.6}
+
+/* DEMO WINDOW */
+.demo-section{padding:3rem 6% 5rem;position:relative;z-index:1}
+.demo-wrap{max-width:680px;margin:0 auto;background:var(--card);border:1px solid var(--border2);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.5)}
+.demo-bar{background:#0D1320;padding:0.75rem 1.2rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
 .demo-dot{width:10px;height:10px;border-radius:50%}
-.demo-url{flex:1;background:rgba(255,255,255,0.04);border-radius:6px;padding:0.25rem 0.8rem;font-size:0.78rem;color:var(--muted);text-align:center}
-.demo-body{padding:1.5rem}
-.msg{display:flex;gap:10px;margin-bottom:1rem;align-items:flex-start}
+.demo-url{flex:1;background:rgba(255,255,255,0.04);border-radius:6px;padding:0.22rem 0.8rem;font-size:0.75rem;color:var(--muted);text-align:center;font-family:var(--mono)}
+.demo-body{padding:1.4rem}
+.msg{display:flex;gap:10px;margin-bottom:0.9rem;align-items:flex-start}
 .msg.user{flex-direction:row-reverse}
-.avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700}
-.avatar.b{background:rgba(79,255,176,0.15);color:var(--accent)}
-.avatar.u{background:rgba(0,201,255,0.15);color:var(--accent2)}
-.bubble{max-width:78%;padding:0.7rem 1rem;border-radius:12px;font-size:0.87rem;line-height:1.55}
-.bubble.b{background:#1C2438;border-radius:4px 12px 12px 12px}
-.bubble.u{background:rgba(0,201,255,0.08);border:1px solid rgba(0,201,255,0.15);border-radius:12px 4px 12px 12px}
-.chip{display:inline-block;background:rgba(79,255,176,0.1);border:1px solid rgba(79,255,176,0.2);color:var(--accent);border-radius:6px;padding:0.2rem 0.5rem;font-size:0.75rem;margin:2px}
-.chip.red{background:rgba(255,100,100,0.08);border-color:rgba(255,100,100,0.25);color:#ff8888}
- 
-/* FEATURES */
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem}
-.feat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
-.feat:hover{border-color:rgba(0,201,255,0.2);transform:translateY(-2px)}
-.feat-dot{width:8px;height:8px;background:var(--accent2);border-radius:50%;margin-bottom:1rem}
-.feat h4{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;margin-bottom:0.4rem}
-.feat p{font-size:0.85rem;color:var(--muted);line-height:1.55}
- 
-/* PRECIOS */
-.modelo-nota{background:rgba(79,255,176,0.04);border:1px solid rgba(79,255,176,0.15);border-radius:12px;padding:1rem 1.4rem;max-width:700px;margin:0 auto 2.5rem;display:flex;gap:12px;align-items:flex-start}
-.nota-icon{width:22px;height:22px;background:rgba(79,255,176,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-size:11px;color:var(--accent);font-weight:700}
-.modelo-nota p{font-size:0.85rem;color:var(--muted);line-height:1.55}
-.modelo-nota p strong{color:var(--text)}
- 
-.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;max-width:900px;margin:0 auto 3rem}
-.plan{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;transition:transform 0.2s}
-.plan:hover{transform:translateY(-4px)}
-.plan.featured{border-color:rgba(79,255,176,0.3)}
-.plan-header{padding:1.6rem 1.6rem 1.2rem;border-bottom:1px solid var(--border);position:relative}
-.popular-tag{position:absolute;top:1rem;right:1rem;background:var(--accent);color:#0A0E1A;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:100px}
-.plan-level{font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
-.plan-title{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:0.3rem}
-.plan-desc{font-size:0.8rem;color:var(--muted);line-height:1.45}
-.plan-install{padding:1.1rem 1.6rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)}
-.install-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:0.3rem}
-.install-price{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;line-height:1}
-.install-price .cur{font-size:1rem;font-weight:400;color:var(--muted);font-family:'DM Sans',sans-serif;vertical-align:super}
-.install-price .once{display:block;font-size:0.75rem;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400;margin-top:4px}
-.install-note{font-size:0.75rem;color:var(--muted);margin-top:6px}
-.install-note::before{content:'↳ ';color:var(--accent)}
-.plan-monthly{padding:1rem 1.6rem;border-bottom:1px solid var(--border)}
-.monthly-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:0.3rem}
-.monthly-row{display:flex;align-items:baseline;gap:5px}
-.monthly-amount{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--accent2)}
-.monthly-per{font-size:0.8rem;color:var(--muted)}
-.plan-feats{padding:1.2rem 1.6rem;flex:1}
-.plan-feats ul{list-style:none}
-.plan-feats li{font-size:0.83rem;padding:0.32rem 0;color:var(--muted);display:flex;gap:8px;align-items:flex-start;border-bottom:1px solid rgba(255,255,255,0.04)}
-.plan-feats li:last-child{border-bottom:none}
-.plan-feats li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0}
-.plan-feats li.on{color:var(--text)}
-.plan-feats li.off{opacity:0.4}
-.plan-feats li.off::before{content:'–';color:var(--muted)}
-.plan-cta{padding:0 1.6rem 1.6rem}
-.plan-btn{display:block;text-align:center;padding:0.75rem;border-radius:10px;font-weight:600;font-size:0.88rem;cursor:pointer;border:none;width:100%;font-family:'DM Sans',sans-serif;transition:all 0.2s;text-decoration:none;margin-top:1rem}
-.plan-btn.outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.plan-btn.outline:hover{border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.04)}
-.plan-btn.solid{background:var(--accent);color:#0A0E1A}
-.plan-btn.solid:hover{box-shadow:0 4px 20px rgba(79,255,176,0.3)}
- 
-/* TOTAL AÑO */
-.total-wrap{max-width:900px;margin:0 auto 1rem}
-.total-title{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:1rem;text-align:center}
-.total-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.tc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center}
-.tc.hi{border-color:rgba(79,255,176,0.25)}
-.tc-name{font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem}
-.tc-val{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800}
-.tc.hi .tc-val{color:var(--accent)}
-.tc-sub{font-size:0.72rem;color:var(--muted);margin-top:4px}
-@media(max-width:560px){.total-cards{grid-template-columns:1fr}}
- 
+.av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;font-family:var(--mono)}
+.av.b{background:rgba(0,255,148,0.12);color:var(--accent)}
+.av.u{background:rgba(0,201,255,0.12);color:var(--accent2)}
+.bubble{max-width:78%;padding:0.7rem 1rem;border-radius:12px;font-size:0.85rem;line-height:1.6}
+.bubble.b{background:var(--card2);border-radius:4px 12px 12px 12px;border:1px solid var(--border)}
+.bubble.u{background:rgba(0,201,255,0.07);border:1px solid rgba(0,201,255,0.15);border-radius:12px 4px 12px 12px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:rgba(0,255,148,0.08);border:1px solid rgba(0,255,148,0.2);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:0.72rem;margin:2px;font-family:var(--mono)}
+.chip.red{background:rgba(255,77,77,0.08);border-color:rgba(255,77,77,0.2);color:#FF8080}
+.chip.warn{background:rgba(255,184,0,0.08);border-color:rgba(255,184,0,0.2);color:var(--warn)}
+
 /* FAQ */
-.faq{max-width:640px;margin:3rem auto 0}
-.faq-item{border-bottom:1px solid var(--border);padding:1.1rem 0;cursor:pointer}
-.faq-q{display:flex;justify-content:space-between;align-items:center;font-size:0.92rem;font-weight:500;gap:1rem}
-.faq-icon{color:var(--accent);font-size:1.2rem;flex-shrink:0;transition:transform 0.25s;line-height:1}
-.faq-a{font-size:0.85rem;color:var(--muted);margin-top:0.7rem;line-height:1.65;display:none}
+.faq-section{padding:5rem 6%;background:var(--bg2);position:relative;z-index:1}
+.faq{max-width:660px;margin:2.5rem auto 0}
+.faq-item{border-bottom:1px solid var(--border);cursor:pointer}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 0;font-size:0.92rem;font-weight:600;gap:1rem;transition:color 0.2s}
+.faq-item:hover .faq-q{color:var(--accent)}
+.faq-icon{color:var(--accent);font-size:1.3rem;flex-shrink:0;transition:transform 0.25s;line-height:1;font-family:var(--mono)}
+.faq-a{font-size:0.85rem;color:var(--muted);padding-bottom:1rem;line-height:1.7;display:none}
 .faq-item.open .faq-a{display:block}
 .faq-item.open .faq-icon{transform:rotate(45deg)}
- 
+
 /* CTA FINAL */
-.cta-section{padding:5rem 6%;text-align:center}
-.cta-box{background:linear-gradient(135deg,rgba(79,255,176,0.05),rgba(0,201,255,0.05));border:1px solid rgba(79,255,176,0.15);border-radius:24px;padding:4.5rem 2rem;max-width:640px;margin:0 auto}
-.cta-box h2{margin-bottom:1rem}
-.cta-box p{color:var(--muted);margin-bottom:2rem;font-size:1rem;max-width:420px;margin-left:auto;margin-right:auto}
- 
+.cta-section{padding:6rem 6%;text-align:center;position:relative;z-index:1}
+.cta-box{background:linear-gradient(135deg,rgba(0,255,148,0.05),rgba(0,201,255,0.05));border:1px solid rgba(0,255,148,0.15);border-radius:24px;padding:5rem 2rem;max-width:680px;margin:0 auto;position:relative;overflow:hidden}
+.cta-box::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,rgba(0,255,148,0.08),transparent 70%);pointer-events:none}
+.cta-box h2{margin-bottom:1rem;position:relative;z-index:1}
+.cta-box p{color:var(--muted);margin-bottom:2.5rem;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.7;position:relative;z-index:1}
+
 /* FOOTER */
-footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
-.footer-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;text-decoration:none;color:var(--text)}
+footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;position:relative;z-index:1}
+.footer-logo{font-weight:800;font-size:1.1rem;text-decoration:none;color:var(--text)}
 .footer-logo span{color:var(--accent)}
-footer p{font-size:0.82rem;color:var(--muted)}
+footer p{font-size:0.8rem;color:var(--muted)}
+
+/* ANIMATIONS */
+.fade-up{opacity:0;transform:translateY(24px);transition:opacity 0.6s ease,transform 0.6s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
- 
+
 <!-- NAV -->
 <nav>
   <a href="#" class="logo">Guía<span>Bot</span></a>
   <ul class="nav-links">
+    <li><a href="#calculador">¿Cuánto ahorro?</a></li>
+    <li><a href="#productos">Planes</a></li>
     <li><a href="#como">Cómo funciona</a></li>
-    <li><a href="#funciones">Funciones</a></li>
-    <li><a href="#precios">Precios</a></li>
   </ul>
-  <a href="#precios" class="nav-cta">Quiero probarlo</a>
+  <a href="#productos" class="nav-cta">Quiero probarlo →</a>
 </nav>
- 
+
 <!-- HERO -->
 <section class="hero">
-  <div class="badge"><span class="badge-dot"></span>Más tiempo para enseñar, menos tiempo revisando</div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="eyebrow"><span class="pulse"></span>Automatización académica para docentes</div>
   <h1>Deja de perder horas revisando <span class="hl">quién entregó y quién no</span></h1>
-  <p class="hero-sub">GuíaBot lo hace por ti en segundos. Sabe exactamente quién va atrasado, qué falta entregar y te avisa antes de que sea tarde.</p>
+  <p class="hero-sub">GuíaBot revisa automáticamente las entregas de tus estudiantes en segundos. Tú solo miras el resultado — y actúas a tiempo.</p>
   <div class="hero-btns">
-    <a href="#precios" class="btn-primary">Empezar ahora →</a>
-    <a href="#como" class="btn-ghost">Ver cómo funciona</a>
+    <a href="#calculador" class="btn-p">¿Cuánto tiempo pierdo? →</a>
+    <a href="#como" class="btn-g">Ver cómo funciona</a>
   </div>
 </section>
- 
-<!-- STATS -->
-<div class="stats">
-  <div class="stat"><div class="stat-n">4h</div><div class="stat-l">Ahorradas al mes por docente</div></div>
-  <div class="stat"><div class="stat-n">&lt;30s</div><div class="stat-l">Para saber quién va atrasado</div></div>
-  <div class="stat"><div class="stat-n">0</div><div class="stat-l">Sorpresas al cierre de período</div></div>
-  <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Control sobre tus entregas</div></div>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <div class="ticker-item">⏱ <span>66 horas</span> ahorradas por período</div>
+    <div class="ticker-item">📋 <span>2.000 archivos</span> revisados en 30 segundos</div>
+    <div class="ticker-item">🎯 <span>0 sorpresas</span> al cierre de período</div>
+    <div class="ticker-item">🧠 <span>Detección de IA</span> en trabajos escritos</div>
+    <div class="ticker-item">📊 <span>Dashboard en tiempo real</span> por grupo y guía</div>
+    <div class="ticker-item">⏱ <span>66 horas</span> ahorradas por período</div>
+    <div class="ticker-item">📋 <span>2.000 archivos</span> revisados en 30 segundos</div>
+    <div class="ticker-item">🎯 <span>0 sorpresas</span> al cierre de período</div>
+    <div class="ticker-item">🧠 <span>Detección de IA</span> en trabajos escritos</div>
+    <div class="ticker-item">📊 <span>Dashboard en tiempo real</span> por grupo y guía</div>
+  </div>
 </div>
- 
-<!-- CÓMO FUNCIONA -->
-<section class="section" id="como">
-  <div class="section-label">Cómo funciona</div>
-  <h2>De horas de revisión manual<br>a segundos de respuesta</h2>
-  <p class="section-sub">Tres pasos y tendrás control total sobre quién cumple y quién no — sin abrir una sola carpeta.</p>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">01</div>
-      <div class="step-icon">
-        <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      </div>
-      <h3>Tú defines las reglas, una sola vez</h3>
-      <p>Configuras qué se espera de cada estudiante. GuíaBot recuerda todo por ti — no vuelves a explicar lo mismo.</p>
+
+<!-- CALCULADOR -->
+<section class="calc-section fade-up" id="calculador">
+  <div style="text-align:center;margin-bottom:3rem">
+    <div class="section-eyebrow">Calculador de ahorro</div>
+    <h2>¿Cuánto tiempo pierdes<br>revisando manualmente?</h2>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto">Mueve los controles y ve en tiempo real cuántas horas pierdes — y cuánto te cuesta ese tiempo.</p>
+  </div>
+
+  <div class="calc-box">
+    <div class="calc-header">
+      <h3>📐 Calcula tu ahorro real</h3>
+      <p>Basado en tu carga académica actual</p>
     </div>
-    <div class="step">
-      <div class="step-num">02</div>
-      <div class="step-icon">
-        <svg viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+    <div class="calc-body">
+      <div class="calc-inputs">
+        <div class="calc-field">
+          <label>Número de estudiantes</label>
+          <input type="range" id="r-alumnos" min="20" max="300" value="174" step="1" oninput="calcular()">
+          <div class="val"><span id="v-alumnos">174</span> estudiantes</div>
+        </div>
+        <div class="calc-field">
+          <label>Evidencias por período</label>
+          <input type="range" id="r-evidencias" min="1" max="20" value="8" step="1" oninput="calcular()">
+          <div class="val"><span id="v-evidencias">8</span> evidencias por estudiante</div>
+        </div>
+        <div class="calc-field">
+          <label>Minutos por revisión manual</label>
+          <input type="range" id="r-minutos" min="1" max="10" value="2" step="1" oninput="calcular()">
+          <div class="val"><span id="v-minutos">2</span> minutos por archivo</div>
+        </div>
+        <div class="calc-field">
+          <label>Tu valor hora (COP)</label>
+          <input type="range" id="r-hora" min="10000" max="50000" value="15000" step="1000" oninput="calcular()">
+          <div class="val">$<span id="v-hora">15.000</span> COP por hora</div>
+        </div>
       </div>
-      <h3>Tus estudiantes entregan normalmente</h3>
-      <p>No cambia nada para ellos. Siguen entregando como siempre — GuíaBot trabaja en segundo plano sin interrumpir tu clase.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">03</div>
-      <div class="step-icon">
-        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+
+      <div class="calc-result">
+        <div class="res-row">
+          <span class="res-label">Total archivos a revisar</span>
+          <span class="res-val" id="r-archivos">1.392</span>
+        </div>
+        <div class="res-row">
+          <span class="res-label">Tiempo manual por período</span>
+          <span class="res-val bad" id="r-horas">46,4 horas</span>
+        </div>
+        <div class="res-row">
+          <span class="res-label">Costo de tu tiempo</span>
+          <span class="res-val bad" id="r-costo">$696.000</span>
+        </div>
+        <div class="res-row">
+          <span class="res-label">Tiempo con GuíaBot</span>
+          <span class="res-val good">~3 minutos ✓</span>
+        </div>
+        <div class="res-row">
+          <span class="res-label">Costo GuíaBot (instalación)</span>
+          <span class="res-val good">$250.000 única vez</span>
+        </div>
+        <div class="res-row" style="border-top:1px solid rgba(0,255,148,0.15);margin-top:4px;padding-top:12px">
+          <span class="res-label" style="font-weight:700;color:var(--text)">Ahorro real por período</span>
+          <span class="res-val savings" id="r-ahorro">$446.000</span>
+        </div>
       </div>
-      <h3>Tú solo revisas el resultado</h3>
-      <p>En segundos tienes el nombre exacto de quién va atrasado. Actúa a tiempo, sin esperar al cierre del período para descubrir sorpresas.</p>
+
+      <div class="calc-conclusion">
+        <div class="conclusion-icon">💡</div>
+        <div class="conclusion-text" id="r-conclusion">
+          Con <strong>174 estudiantes y 8 evidencias</strong>, pierdes <strong>46 horas</strong> cada período revisando manualmente. GuíaBot se paga solo desde el primer mes y te devuelve tiempo real para enseñar.
+        </div>
+      </div>
     </div>
   </div>
- 
-  <!-- DEMO CHAT -->
+</section>
+
+<!-- PRODUCTOS -->
+<section class="products-section fade-up" id="productos">
+  <div style="text-align:center;margin-bottom:3rem">
+    <div class="section-eyebrow">Elige tu línea</div>
+    <h2>Dos versiones según<br>lo que necesitas controlar</h2>
+    <p class="section-sub" style="margin-left:auto;margin-right:auto">Ambas incluyen instalación completa, capacitación y dashboard. La diferencia está en lo que detectan.</p>
+  </div>
+
+  <div class="products-grid">
+
+    <!-- BASE -->
+    <div class="product-card fade-up">
+      <div class="product-top">
+        <div class="product-line">Línea 01</div>
+        <div class="product-name">GuíaBot Base</div>
+        <div class="product-desc">Para docentes que necesitan saber quién entregó y quién no, sin revisión manual. Verifica evidencias por nombre de archivo.</div>
+      </div>
+      <div class="product-price">
+        <span class="price-label">Instalación única</span>
+        <div class="price-row">
+          <span class="price-amount">$250.000</span>
+          <span class="price-period">COP</span>
+        </div>
+        <div class="price-note">$50.000 COP/mes mantenimiento</div>
+      </div>
+      <div class="product-feats">
+        <ul>
+          <li class="on">Verificación automática de entregas</li>
+          <li class="on">Dashboard por grupo y guía</li>
+          <li class="on">Semáforo de riesgo por aprendiz</li>
+          <li class="on">Alertas de estudiantes críticos</li>
+          <li class="on">Comparativo entre grupos</li>
+          <li class="on">Exportar reportes Excel</li>
+          <li class="on">Capacitación virtual incluida</li>
+          <li class="off">Detección de contenido con IA</li>
+        </ul>
+      </div>
+      <div class="product-cta">
+        <a href="mailto:ideaia2026@gmail.com?subject=Solicitud GuíaBot Base&body=Hola, me interesa GuíaBot Base ($250.000 instalación + $50.000/mes).%0AMi nombre es:%0AMi institución es:" class="product-btn outline">Solicitar instalación →</a>
+      </div>
+    </div>
+
+    <!-- IA -->
+    <div class="product-card featured fade-up">
+      <div class="product-top">
+        <div class="product-line">Línea 02</div>
+        <div class="product-name">GuíaBot IA</div>
+        <div class="product-desc">Para docentes que asignan trabajos escritos donde el estudiante debe pensar. Incluye todo lo del Base más detección de contenido generado por IA.</div>
+      </div>
+      <div class="product-price">
+        <span class="price-label">Instalación única</span>
+        <div class="price-row">
+          <span class="price-amount">$350.000</span>
+          <span class="price-period">COP</span>
+        </div>
+        <div class="price-note">$80.000 COP/mes mantenimiento</div>
+      </div>
+      <div class="product-feats">
+        <ul>
+          <li class="on">Todo lo del plan Base</li>
+          <li class="ai on">Detecta si el trabajo fue escrito con IA</li>
+          <li class="ai on">Porcentaje de probabilidad IA por entrega</li>
+          <li class="ai on">Alerta automática al detectar uso de IA</li>
+          <li class="ai on">Reporte de autenticidad por estudiante</li>
+          <li class="on">Soporte prioritario</li>
+        </ul>
+      </div>
+      <div class="product-cta">
+        <a href="mailto:ideaia2026@gmail.com?subject=Solicitud GuíaBot IA&body=Hola, me interesa GuíaBot IA ($350.000 instalación + $80.000/mes).%0AMi nombre es:%0AMi institución es:" class="product-btn solid">Solicitar instalación →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="compare-note">
+    <div class="compare-note-icon">i</div>
+    <p><strong>¿Instructor SENA?</strong> El precio está calculado para tu carga académica real — promedio de 150 a 200 aprendices distribuidos en varios grupos con múltiples guías por período. La instalación cubre toda tu configuración y el mantenimiento te mantiene activo todo el año.</p>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section class="how-section fade-up" id="como">
+  <div style="text-align:center;margin-bottom:3rem">
+    <div class="section-eyebrow">El proceso</div>
+    <h2>Listo en 72 horas,<br>funcionando desde el día uno</h2>
+  </div>
+  <div class="steps-grid">
+    <div class="step">
+      <div class="step-n">01</div>
+      <div class="step-icon">📋</div>
+      <h3>Defines tus grupos y guías</h3>
+      <p>Compartimos contigo la configuración inicial. Una sola vez, adaptada a tu institución y carga académica.</p>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div>
+      <div class="step-icon">🔗</div>
+      <h3>Conectas tus carpetas de Drive</h3>
+      <p>Cada estudiante tiene su carpeta de evidencias. GuíaBot la revisa automáticamente sin que nadie tenga que hacer nada distinto.</p>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div>
+      <div class="step-icon">⚡</div>
+      <h3>El bot audita en segundos</h3>
+      <p>Ejecutas el bot cuando quieras — en 30 segundos tienes el estado real de todos tus estudiantes actualizado.</p>
+    </div>
+    <div class="step">
+      <div class="step-n">04</div>
+      <div class="step-icon">📊</div>
+      <h3>Tú solo miras el dashboard</h3>
+      <p>Quién entregó, quién va atrasado, qué guía tiene más pendientes. Todo visible, sin abrir una sola carpeta.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo-section fade-up">
+  <div style="text-align:center;margin-bottom:2rem">
+    <div class="section-eyebrow">Demo real</div>
+    <h2>Así se ve GuíaBot en acción</h2>
+  </div>
   <div class="demo-wrap">
     <div class="demo-bar">
       <div class="demo-dot" style="background:#ff5f56"></div>
       <div class="demo-dot" style="background:#ffbd2e"></div>
       <div class="demo-dot" style="background:#27c93f"></div>
-      <div class="demo-url">guiabot.vercel.app</div>
+      <div class="demo-url">bot-sena-seguimiento.vercel.app/dashboard.html</div>
     </div>
     <div class="demo-body">
-      <div class="msg bot">
-        <div class="avatar b">GB</div>
-        <div class="bubble b">¡Hola! Soy <strong>GuíaBot</strong>. Dime qué guía quieres revisar y en segundos te digo quién entregó, quién no y qué falta.</div>
+      <div class="msg">
+        <div class="av b">GB</div>
+        <div class="bubble b">Panel activo — <strong>Ficha 3415417 · CJLL</strong><br>41 aprendices · 4 guías activas · Última actualización: hace 2 min</div>
       </div>
       <div class="msg user">
-        <div class="avatar u">TU</div>
-        <div class="bubble u">Verifica la guía #3 — Actividades de Formación</div>
+        <div class="av u">DO</div>
+        <div class="bubble u">¿Cómo va la Guía 00 Inducción?</div>
       </div>
-      <div class="msg bot">
-        <div class="avatar b">GB</div>
+      <div class="msg">
+        <div class="av b">GB</div>
         <div class="bubble b">
-          ✅ <strong>Guía #3 — Resultados:</strong><br><br>
-          <span class="chip">✓ Entregaron: 18</span>
-          <span class="chip red">✗ Pendientes: 4</span><br><br>
-          Pendientes: Rodríguez M., Vargas C., Torres L., Mejía P.<br><br>
-          ¿Quieres exportar este reporte en PDF o Excel?
+          <strong>Guía 00 Inducción — 41 aprendices:</strong><br><br>
+          <span class="chip">✅ Completos: 32</span>
+          <span class="chip warn">🟡 Parcial: 6</span>
+          <span class="chip red">🔴 Crítico: 3</span><br><br>
+          Críticos: Ariza Marín J., Benavides F., Cardona L.<br><br>
+          <span style="font-size:0.8rem;color:var(--muted)">¿Exporto el reporte en Excel?</span>
+        </div>
+      </div>
+      <div class="msg user">
+        <div class="av u">DO</div>
+        <div class="bubble u">¿Hay trabajos escritos con IA? <span style="font-size:0.75rem;color:var(--muted)">(GuíaBot IA)</span></div>
+      </div>
+      <div class="msg">
+        <div class="av b">GB</div>
+        <div class="bubble b">
+          🧠 <strong>Análisis de autenticidad — Guía 02:</strong><br><br>
+          <span class="chip red">⚠️ Alta probabilidad IA: 4 trabajos</span><br><br>
+          Rodríguez A. — 94% prob. IA<br>
+          Torres S. — 87% prob. IA<br>
+          Vargas C. — 81% prob. IA<br>
+          Mejía P. — 76% prob. IA<br><br>
+          <span style="font-size:0.8rem;color:var(--muted)">Reporte de autenticidad listo para exportar.</span>
         </div>
       </div>
     </div>
   </div>
 </section>
- 
-<!-- FUNCIONES -->
-<section class="section" id="funciones" style="background:var(--bg2)">
-  <div class="section-label">Por qué GuíaBot cambia tu día a día</div>
-  <h2>Recupera el tiempo que pierdes<br>en tareas que no te enseñan nada</h2>
-  <p class="section-sub">Cada hora que pasas revisando manualmente es una hora que no pasas preparando clases, descansando o con tu familia.</p>
-  <div class="features-grid">
-    <div class="feat">
-      <div class="feat-dot"></div>
-      <h4>Nunca más revisas carpeta por carpeta</h4>
-      <p>GuíaBot detecta automáticamente quién entregó y quién no. Lo que antes te tomaba horas, ahora tarda 30 segundos.</p>
-    </div>
-    <div class="feat">
-      <div class="feat-dot"></div>
-      <h4>Sabes quién va atrasado antes de que sea tarde</h4>
-      <p>Actúa a tiempo con cada estudiante. No esperes al cierre del período para descubrir que varios van mal.</p>
-    </div>
-    <div class="feat">
-      <div class="feat-dot"></div>
-      <h4>Controla todas tus materias desde un solo lugar</h4>
-      <p>Sin importar cuántos grupos o materias tengas, todo está en una sola pantalla. Sin saltar entre carpetas ni listas.</p>
-    </div>
-    <div class="feat">
-      <div class="feat-dot"></div>
-      <h4>Funciona desde cualquier dispositivo, en cualquier lugar</h4>
-      <p>Desde el celular en el recreo, desde casa en la noche, desde el computador del colegio. Sin instalar nada.</p>
-    </div>
-    <div class="feat">
-      <div class="feat-dot"></div>
-      <h4>Se adapta a tu forma de trabajar, no al revés</h4>
-      <p>Cada docente configura GuíaBot según su materia, institución y metodología. No cambias tu flujo de trabajo — lo automatizas.</p>
-    </div>
-    <div class="feat">
-      <div class="feat-dot"></div>
-      <h4>Tu historial siempre disponible cuando lo necesitas</h4>
-      <p>¿Un padre de familia pregunta por el rendimiento de su hijo? Tienes la respuesta en segundos, con respaldo de datos reales.</p>
-    </div>
-  </div>
-</section>
- 
-<!-- PRECIOS -->
-<section class="section" id="precios">
+
+<!-- FAQ -->
+<section class="faq-section fade-up">
   <div style="text-align:center">
-    <div class="section-label">Inversión</div>
-    <h2>Precios claros, sin sorpresas</h2>
-    <p class="section-sub" style="margin-left:auto;margin-right:auto">Paga una vez la instalación y configuración. Luego solo la mensualidad de uso. Sin contratos forzosos.</p>
+    <div class="section-eyebrow">Preguntas frecuentes</div>
+    <h2>Lo que siempre preguntan<br>antes de instalar</h2>
   </div>
- 
-  <div class="modelo-nota">
-    <div class="nota-icon">i</div>
-    <p><strong>¿Cómo funciona el modelo?</strong> Primero pagas la <strong>instalación única</strong> que incluye la configuración completa adaptada a tu carga académica. Luego pagas una <strong>mensualidad</strong> para mantener el servicio activo. Cancela cuando quieras, sin penalizaciones.</p>
-  </div>
- 
-  <div class="plans">
- 
-    <!-- ESTÁNDAR -->
-    <div class="plan">
-      <div class="plan-header">
-        <div class="plan-level">Docente</div>
-        <div class="plan-title">Estándar</div>
-        <div class="plan-desc">Para docentes con 2 a 4 materias o grupos a cargo</div>
-      </div>
-      <div class="plan-install">
-        <div class="install-label">Instalación única</div>
-        <div class="install-price">
-          <span class="cur">$</span>280.000
-          <span class="once">COP — pago único</span>
-        </div>
-        <div class="install-note">Configuración + despliegue + capacitación</div>
-      </div>
-      <div class="plan-monthly">
-        <div class="monthly-label">Luego mensualmente</div>
-        <div class="monthly-row">
-          <span class="monthly-amount">$95.000</span>
-          <span class="monthly-per">COP / mes</span>
-        </div>
-      </div>
-      <div class="plan-feats">
-        <ul>
-          <li class="on">Hasta 4 materias o grupos</li>
-          <li class="on">Hasta 15 guías activas</li>
-          <li class="on">Estudiantes ilimitados</li>
-          <li class="on">Reportes básicos</li>
-          <li class="on">Soporte por bot 24/7</li>
-          <li class="off">Exportar PDF / Excel</li>
-          <li class="off">Historial de entregas</li>
-        </ul>
-      </div>
-      <div class="plan-cta">
-        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Est%C3%A1ndar%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Est%C3%A1ndar%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24280.000%20%2B%20%2495.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn outline">Quiero este plan</a>
-      </div>
-    </div>
- 
-    <!-- AVANZADO -->
-    <div class="plan featured">
-      <div class="plan-header">
-        <div class="popular-tag">Más elegido</div>
-        <div class="plan-level">Docente</div>
-        <div class="plan-title">Avanzado</div>
-        <div class="plan-desc">Para docentes con 5 o más materias y carga académica alta</div>
-      </div>
-      <div class="plan-install">
-        <div class="install-label">Instalación única</div>
-        <div class="install-price">
-          <span class="cur">$</span>420.000
-          <span class="once">COP — pago único</span>
-        </div>
-        <div class="install-note">Configuración completa + personalización</div>
-      </div>
-      <div class="plan-monthly">
-        <div class="monthly-label">Luego mensualmente</div>
-        <div class="monthly-row">
-          <span class="monthly-amount">$139.000</span>
-          <span class="monthly-per">COP / mes</span>
-        </div>
-      </div>
-      <div class="plan-feats">
-        <ul>
-          <li class="on">Materias y grupos ilimitados</li>
-          <li class="on">Guías ilimitadas</li>
-          <li class="on">Estudiantes ilimitados</li>
-          <li class="on">Exportar PDF / Excel</li>
-          <li class="on">Historial completo de entregas</li>
-          <li class="on">Dashboard con gráficas</li>
-          <li class="on">Soporte prioritario por bot</li>
-        </ul>
-      </div>
-      <div class="plan-cta">
-        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Avanzado%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Avanzado%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24420.000%20%2B%20%24139.000%2Fmes).%0AMi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20" class="plan-btn solid">Quiero este plan →</a>
-      </div>
-    </div>
- 
-    <!-- INSTITUCIÓN -->
-    <div class="plan">
-      <div class="plan-header">
-        <div class="plan-level">Institución</div>
-        <div class="plan-title">Colegio / Centro</div>
-        <div class="plan-desc">Para colegios o centros con varios docentes usando GuíaBot</div>
-      </div>
-      <div class="plan-install">
-        <div class="install-label">Instalación única</div>
-        <div class="install-price">
-          <span class="cur">$</span>650.000
-          <span class="once">COP — pago único</span>
-        </div>
-        <div class="install-note">Configuración multi-docente + capacitación grupal</div>
-      </div>
-      <div class="plan-monthly">
-        <div class="monthly-label">Luego mensualmente</div>
-        <div class="monthly-row">
-          <span class="monthly-amount">$219.000</span>
-          <span class="monthly-per">COP / mes</span>
-        </div>
-      </div>
-      <div class="plan-feats">
-        <ul>
-          <li class="on">Hasta 10 docentes incluidos</li>
-          <li class="on">Materias y guías ilimitadas</li>
-          <li class="on">Estudiantes ilimitados</li>
-          <li class="on">Panel administrativo central</li>
-          <li class="on">Exportar PDF / Excel</li>
-          <li class="on">Historial completo</li>
-          <li class="on">Factura electrónica</li>
-        </ul>
-      </div>
-      <div class="plan-cta">
-        <a href="mailto:casdu2@gmail.com?subject=Solicitud%20plan%20Instituci%C3%B3n%20GuiaBot&body=Hola%2C%20me%20interesa%20el%20plan%20Instituci%C3%B3n%20de%20GuiaBot%20(Instalaci%C3%B3n%20%24650.000%20%2B%20%24219.000%2Fmes).%0ANombre%20de%20la%20instituci%C3%B3n%3A%20%0AN%C3%BAmero%20de%20docentes%3A%20" class="plan-btn outline">Quiero este plan</a>
-      </div>
-    </div>
- 
-  </div>
- 
-  <!-- TOTAL PRIMER AÑO -->
-  <div class="total-wrap">
-    <div class="total-title">¿Cuánto pago en total el primer año?</div>
-    <div class="total-cards">
-      <div class="tc">
-        <div class="tc-name">Estándar — 1er año</div>
-        <div class="tc-val">$1.420.000</div>
-        <div class="tc-sub">$280K instalación + 12×$95K</div>
-      </div>
-      <div class="tc hi">
-        <div class="tc-name">Avanzado — 1er año</div>
-        <div class="tc-val">$2.088.000</div>
-        <div class="tc-sub">$420K instalación + 12×$139K</div>
-      </div>
-      <div class="tc">
-        <div class="tc-name">Institución — 1er año</div>
-        <div class="tc-val">$3.278.000</div>
-        <div class="tc-sub">$650K instalación + 12×$219K</div>
-      </div>
-    </div>
-  </div>
- 
-  <!-- FAQ -->
   <div class="faq">
     <div class="faq-item" onclick="this.classList.toggle('open')">
-      <div class="faq-q">¿Puedo usar GuíaBot sin importar la materia que dicto en diferentes colegios, instituciones técnicas o universidades? <span class="faq-icon">+</span></div>
-      <div class="faq-a">Sí. GuíaBot se adapta a cualquier área del conocimiento, nivel educativo e institución. Durante la instalación configuramos el sistema según tu contexto específico: las materias que dictas, los formatos de entrega que usas y las instituciones donde trabajas. Puedes gestionar todo desde una sola cuenta sin importar cuántos colegios, instituciones técnicas o universidades tengas a cargo.</div>
+      <div class="faq-q">¿Funciona con cualquier institución o solo con SENA? <span class="faq-icon">+</span></div>
+      <div class="faq-a">GuíaBot funciona con cualquier institución educativa — colegios, universidades, centros técnicos, institutos. Durante la instalación configuramos el sistema según tu contexto: los grupos que tienes, las guías o actividades que asignas y la forma en que tus estudiantes entregan evidencias.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
-      <div class="faq-q">¿Puedo cambiar de plan si mi carga académica crece? <span class="faq-icon">+</span></div>
-      <div class="faq-a">Sí. Si en algún momento tienes más cursos o guías, puedes subir de plan pagando solo la diferencia en instalación. La mensualidad se ajusta desde el siguiente mes, sin trámites complicados.</div>
+      <div class="faq-q">¿Mis estudiantes tienen que cambiar algo en su forma de entregar? <span class="faq-icon">+</span></div>
+      <div class="faq-a">No. Siguen entregando exactamente como lo hacen hoy — en su carpeta de Google Drive. La única condición es que nombren los archivos correctamente, lo cual refuerza un hábito académico importante. GuíaBot trabaja en segundo plano sin interrumpir ningún proceso.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
-      <div class="faq-q">¿Qué pasa si cancelo la mensualidad? <span class="faq-icon">+</span></div>
-      <div class="faq-a">El bot deja de estar activo pero tu configuración queda guardada. Si reanudas el servicio antes de 3 meses, no pagas la instalación nuevamente. Sin multas ni penalizaciones.</div>
+      <div class="faq-q">¿Cuánto tiempo tarda la instalación? <span class="faq-icon">+</span></div>
+      <div class="faq-a">Entre 24 y 72 horas hábiles desde que confirmas tu plan y compartes la información de tus grupos. Incluye configuración completa, despliegue y una sesión de capacitación virtual para que uses GuíaBot con confianza desde el primer día.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
-      <div class="faq-q">¿La instalación incluye capacitación? <span class="faq-icon">+</span></div>
-      <div class="faq-a">Sí. Todos los planes incluyen una sesión de capacitación virtual para que uses GuíaBot con seguridad desde el primer día. Además tienes acceso al bot de soporte automático disponible las 24 horas.</div>
+      <div class="faq-q">¿Qué pasa si cancelo el mantenimiento mensual? <span class="faq-icon">+</span></div>
+      <div class="faq-a">El bot deja de estar activo pero tu configuración queda guardada. Si reanudas antes de 3 meses no pagas instalación nuevamente. Sin contratos ni penalizaciones — solo lo que usas.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
-      <div class="faq-q">¿Cuánto tiempo tarda la instalación y configuración? <span class="faq-icon">+</span></div>
-      <div class="faq-a">Depende de tu carga académica. En promedio la instalación está lista en 24 a 72 horas hábiles después de confirmar tu plan y compartir la información necesaria para la configuración.</div>
+      <div class="faq-q">¿La detección de IA es confiable? <span class="faq-icon">+</span></div>
+      <div class="faq-a">GuíaBot IA usa análisis de patrones lingüísticos para calcular una probabilidad — no es un veredicto definitivo, es una herramienta de alerta. Un 90% de probabilidad no significa automáticamente que el trabajo fue generado por IA, pero sí indica que merece una revisión más detallada por parte del docente. Es una primera capa de filtro, no un juez.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">¿Puedo ver el dashboard desde el celular? <span class="faq-icon">+</span></div>
+      <div class="faq-a">Sí. El dashboard es completamente responsive — funciona en celular, tableta y computador sin instalar ninguna aplicación. Solo necesitas el navegador y conexión a internet.</div>
     </div>
   </div>
 </section>
- 
+
 <!-- CTA FINAL -->
-<section class="cta-section" id="contacto">
+<section class="cta-section fade-up">
   <div class="cta-box">
-    <div class="section-label" style="text-align:center">Da el primer paso</div>
-    <h2>¿Cuántas horas más vas a perder revisando manualmente?</h2>
-    <p>Cada semana que pasa son horas que no recuperas. GuíaBot se configura en menos de 72 horas y desde el primer día sabes exactamente quién entregó y quién no.</p>
-    <a href="mailto:casdu2@gmail.com?subject=Solicitud%20de%20instalaci%C3%B3n%20GuiaBot&body=Hola%2C%20me%20interesa%20instalar%20GuiaBot.%20Mi%20nombre%20es%3A%20%0AMi%20instituci%C3%B3n%20es%3A%20%0AEl%20plan%20que%20me%20interesa%20es%3A%20" class="btn-primary">Solicitar mi instalación →</a>
+    <div class="section-eyebrow" style="text-align:center">Da el primer paso</div>
+    <h2>Cada período que pasa<br>son horas que no recuperas</h2>
+    <p>GuíaBot se instala en menos de 72 horas. Desde el primer día sabes exactamente quién entregó, quién va atrasado y — si eliges la línea IA — quién usó inteligencia artificial para hacer su trabajo.</p>
+    <a href="mailto:ideaia2026@gmail.com?subject=Quiero instalar GuíaBot&body=Hola, me interesa instalar GuíaBot.%0AMi nombre es:%0AMi institución es:%0AEl plan que me interesa es:" class="btn-p">Solicitar mi instalación →</a>
   </div>
 </section>
- 
+
 <!-- FOOTER -->
 <footer>
   <a href="#" class="footer-logo">Guía<span>Bot</span></a>
   <p>© 2026 GuíaBot — Automatización académica para docentes</p>
   <p>Hecho con dedicación para quienes enseñan</p>
 </footer>
- 
+
+<script>
+// CALCULADOR
+function fmt(n){return n.toLocaleString('es-CO');}
+
+function calcular(){
+  const alumnos   = +document.getElementById('r-alumnos').value;
+  const evidencias= +document.getElementById('r-evidencias').value;
+  const minutos   = +document.getElementById('r-minutos').value;
+  const hora      = +document.getElementById('r-hora').value;
+
+  document.getElementById('v-alumnos').textContent    = fmt(alumnos);
+  document.getElementById('v-evidencias').textContent = evidencias;
+  document.getElementById('v-minutos').textContent    = minutos;
+  document.getElementById('v-hora').textContent       = fmt(hora);
+
+  const archivos     = alumnos * evidencias;
+  const horasTotales = (archivos * minutos) / 60;
+  const costoTiempo  = horasTotales * hora;
+  const ahorro       = costoTiempo - 250000;
+
+  document.getElementById('r-archivos').textContent = fmt(archivos);
+  document.getElementById('r-horas').textContent    = horasTotales.toFixed(1) + ' horas';
+  document.getElementById('r-costo').textContent    = '$' + fmt(Math.round(costoTiempo));
+  document.getElementById('r-ahorro').textContent   = ahorro > 0 ? '$' + fmt(Math.round(ahorro)) : '$0 (ya cubierto)';
+
+  document.getElementById('r-conclusion').innerHTML =
+    `Con <strong>${fmt(alumnos)} estudiantes y ${evidencias} evidencias</strong>, pierdes <strong>${horasTotales.toFixed(0)} horas</strong> cada período revisando manualmente. GuíaBot se paga solo desde el primer mes — y te devuelve <strong>${horasTotales.toFixed(0)} horas reales</strong> para enseñar.`;
+}
+
+calcular();
+
+// FAQ
+document.querySelectorAll('.faq-item').forEach(item=>{
+  item.addEventListener('click',()=>item.classList.toggle('open'));
+});
+
+// FADE IN ON SCROLL
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:0.1});
+document.querySelectorAll('.fade-up').forEach(el=>observer.observe(el));
+</script>
 </body>
 </html>
