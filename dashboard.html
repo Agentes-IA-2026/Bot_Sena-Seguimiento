@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GuíaBot — Panel de Seguimiento</title>
+<title>GuíaBot — Panel de Seguimiento SENA</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -13,13 +13,15 @@
   --bg:#080B14;--surface:#0D1117;--card:#111827;--card2:#1a2235;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
   --green:#00F5A0;--green2:#00D98B;--blue:#3B82F6;--purple:#8B5CF6;
-  --amber:#F59E0B;--red:#EF4444;
+  --amber:#F59E0B;--red:#EF4444;--cyan:#06B6D4;
   --text:#F1F5F9;--text2:#94A3B8;--text3:#475569;
   --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
   --radius:12px;--radius2:8px;--sidebar:240px;
 }
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;display:flex;min-height:100vh}
+
+/* SIDEBAR */
 .sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto}
 .sidebar-top{padding:20px 16px;border-bottom:1px solid var(--border)}
 .logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
@@ -34,7 +36,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .nav-item.active{background:rgba(0,245,160,0.08);border-color:rgba(0,245,160,0.15);color:var(--green)}
 .nav-item svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;opacity:0.7}
 .nav-item.active svg{opacity:1}
-.nav-badge{margin-left:auto;background:rgba(0,245,160,0.15);color:var(--green);font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:100px;font-family:var(--mono)}
+.nav-badge{margin-left:auto;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:100px;font-family:var(--mono)}
+.nav-badge.green{background:rgba(0,245,160,0.15);color:var(--green)}
+.nav-badge.red{background:rgba(239,68,68,0.15);color:var(--red)}
 .sidebar-bottom{padding:12px;border-top:1px solid var(--border);margin-top:auto}
 .user-card{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius2);background:var(--card);border:1px solid var(--border);cursor:pointer}
 .user-card:hover{border-color:var(--border2)}
@@ -47,49 +51,75 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .conn-dot.offline{background:var(--red)}
 .conn-dot.loading{background:var(--amber);animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* MAIN */
 .main{margin-left:var(--sidebar);flex:1;min-height:100vh}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(8,11,20,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .page-title{font-size:0.95rem;font-weight:600;letter-spacing:-0.3px}
 .breadcrumb{font-size:0.7rem;color:var(--text3);font-family:var(--mono)}
 .breadcrumb span{color:var(--text2)}
-.topbar-right{display:flex;align-items:center;gap:8px}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .status-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;background:var(--card);border:1px solid var(--border);font-size:0.7rem;color:var(--text2);font-family:var(--mono);white-space:nowrap}
 .status-dot{width:5px;height:5px;border-radius:50%;background:var(--text3)}
 .status-dot.online{background:var(--green);box-shadow:0 0 4px var(--green)}
 .status-dot.loading{background:var(--amber);animation:blink 1s infinite}
 .status-dot.offline{background:var(--red)}
-.btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius2);font-size:0.78rem;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.15s;border:1px solid transparent}
+.btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius2);font-size:0.78rem;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.15s;border:1px solid transparent;white-space:nowrap}
 .btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .btn-ghost{background:var(--card);border-color:var(--border);color:var(--text2)}
 .btn-ghost:hover{border-color:var(--border2);color:var(--text)}
 .btn-primary{background:var(--green);color:#080B14}
 .btn-primary:hover{background:var(--green2);box-shadow:0 0 14px rgba(0,245,160,0.3)}
+.btn-danger{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2);color:#FCA5A5}
+.btn-danger:hover{background:rgba(239,68,68,0.2)}
 .btn.spinning svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* VIEWS */
+.view{display:none}
+.view.active{display:block}
 .content{padding:20px 24px}
+
+/* TABS NAVIGATION */
+.view-tabs{display:flex;gap:2px;background:var(--card);border-bottom:1px solid var(--border);padding:0 24px}
+.view-tab{padding:10px 16px;font-size:0.8rem;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;align-items:center;gap:6px}
+.view-tab:hover{color:var(--text)}
+.view-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.view-tab svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* FICHA TABS */
 .ficha-tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
 .ficha-tab{padding:6px 14px;border-radius:var(--radius2);background:var(--card);border:1px solid var(--border);color:var(--text2);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:var(--mono)}
 .ficha-tab:hover{border-color:var(--border2);color:var(--text)}
 .ficha-tab.active{background:rgba(0,245,160,0.08);border-color:rgba(0,245,160,0.25);color:var(--green)}
 .ficha-tab-sub{font-size:0.62rem;color:var(--text3);font-weight:400;margin-top:1px}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.15s}
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px)}
 .kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--radius) var(--radius) 0 0}
 .kpi.green::after{background:linear-gradient(90deg,var(--green),transparent)}
 .kpi.blue::after{background:linear-gradient(90deg,var(--blue),transparent)}
 .kpi.amber::after{background:linear-gradient(90deg,var(--amber),transparent)}
 .kpi.red::after{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.purple::after{background:linear-gradient(90deg,var(--purple),transparent)}
 .kpi-label{font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:6px}
 .kpi-val{font-size:1.8rem;font-weight:700;letter-spacing:-1px;line-height:1;font-family:var(--mono)}
 .kpi.green .kpi-val{color:var(--green)}
 .kpi.blue .kpi-val{color:var(--blue)}
 .kpi.amber .kpi-val{color:var(--amber)}
 .kpi.red .kpi-val{color:var(--red)}
+.kpi.purple .kpi-val{color:var(--purple)}
 .kpi-sub{font-size:0.65rem;color:var(--text3);margin-top:3px}
+
+/* GUIA TABS */
 .guia-tabs{display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap}
 .guia-tab{padding:5px 12px;border-radius:100px;background:var(--card);border:1px solid var(--border);color:var(--text3);font-size:0.7rem;font-weight:500;cursor:pointer;transition:all 0.15s;font-family:var(--mono)}
 .guia-tab:hover{color:var(--text);border-color:var(--border2)}
 .guia-tab.active{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:var(--blue)}
+
+/* PANEL */
 .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
 .panel-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
 .panel-title{font-size:0.85rem;font-weight:600}
@@ -97,47 +127,115 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .panel-body{padding:16px}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .chart-wrap{position:relative;height:180px}
+
+/* TABLE */
 .table-controls{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .search-wrap{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius2);padding:5px 10px;flex:1;min-width:140px;max-width:220px}
 .search-wrap svg{width:12px;height:12px;stroke:var(--text3);fill:none;stroke-width:2;flex-shrink:0}
 .search-input{background:none;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:0.78rem;width:100%}
 .search-input::placeholder{color:var(--text3)}
-.filter-group{display:flex;gap:4px}
+.filter-group{display:flex;gap:4px;flex-wrap:wrap}
 .filter-btn{padding:5px 10px;border-radius:var(--radius2);background:transparent;border:1px solid var(--border);color:var(--text3);font-size:0.7rem;font-weight:500;font-family:var(--font);cursor:pointer;transition:all 0.15s}
 .filter-btn:hover{color:var(--text);border-color:var(--border2)}
 .filter-btn.active{background:rgba(0,245,160,0.08);border-color:rgba(0,245,160,0.25);color:var(--green)}
+.filter-btn.f-critico.active{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.25);color:var(--red)}
+.filter-btn.f-riesgo.active{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.25);color:var(--amber)}
+.filter-btn.f-aldia.active{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.25);color:var(--blue)}
 .tabla-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 thead th{padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--text3);font-weight:500;text-align:left;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border);font-family:var(--mono);white-space:nowrap}
 thead th.ev-th{text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis}
 tbody td{padding:9px 12px;font-size:0.8rem;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:rgba(255,255,255,0.02)}
+tbody tr{transition:background 0.1s;cursor:pointer}
+tbody tr:hover td{background:rgba(255,255,255,0.03)}
 .ev-cell{text-align:center;font-size:0.9rem;font-weight:700}
 .ev-ok{color:var(--green)}
 .ev-no{color:rgba(239,68,68,0.5)}
 .ev-nd{color:var(--text3);font-size:0.75rem}
+
+/* BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:0.62rem;font-weight:600;font-family:var(--mono)}
 .badge::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0}
 .badge-green{background:rgba(0,245,160,0.1);color:var(--green);border:1px solid rgba(0,245,160,0.2)}
 .badge-amber{background:rgba(245,158,11,0.1);color:var(--amber);border:1px solid rgba(245,158,11,0.2)}
 .badge-red{background:rgba(239,68,68,0.1);color:#FCA5A5;border:1px solid rgba(239,68,68,0.2)}
+.badge-blue{background:rgba(59,130,246,0.1);color:var(--blue);border:1px solid rgba(59,130,246,0.2)}
+.badge-purple{background:rgba(139,92,246,0.1);color:var(--purple);border:1px solid rgba(139,92,246,0.2)}
+
+/* SEMÁFORO */
+.semaforo{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:100px;font-size:0.62rem;font-weight:700;font-family:var(--mono)}
+.semaforo-critico{background:rgba(239,68,68,0.12);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25)}
+.semaforo-riesgo{background:rgba(245,158,11,0.12);color:var(--amber);border:1px solid rgba(245,158,11,0.25)}
+.semaforo-aldia{background:rgba(59,130,246,0.12);color:var(--blue);border:1px solid rgba(59,130,246,0.25)}
+.semaforo-completo{background:rgba(0,245,160,0.12);color:var(--green);border:1px solid rgba(0,245,160,0.25)}
+
+/* PROGRESS */
 .prog-wrap{display:flex;align-items:center;gap:6px;min-width:80px}
 .prog-bar{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:100px;overflow:hidden}
 .prog-fill{height:100%;border-radius:100px}
 .prog-fill.green{background:var(--green)}
 .prog-fill.amber{background:var(--amber)}
 .prog-fill.red{background:var(--red)}
+.prog-fill.blue{background:var(--blue)}
 .prog-label{font-size:0.65rem;color:var(--text3);font-family:var(--mono);min-width:26px;text-align:right}
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 16px;color:var(--text3);gap:6px;text-align:center}
+
+/* COMPARATIVO */
+.comparativo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.comp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;transition:border-color 0.2s,transform 0.15s;cursor:pointer}
+.comp-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.comp-card.selected{border-color:var(--green);background:rgba(0,245,160,0.05)}
+.comp-ficha{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--green);margin-bottom:2px}
+.comp-colegio{font-size:0.65rem;color:var(--text3);margin-bottom:10px;line-height:1.3}
+.comp-pct{font-family:var(--mono);font-size:1.6rem;font-weight:700;line-height:1;margin-bottom:4px}
+.comp-sub{font-size:0.65rem;color:var(--text3)}
+.comp-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:100px;overflow:hidden;margin-top:8px}
+.comp-bar-fill{height:100%;border-radius:100px;transition:width 0.5s ease}
+
+/* APRENDIZ MODAL */
+.aprendiz-modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);z-index:998;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+.aprendiz-modal.open{opacity:1;pointer-events:all}
+.aprendiz-panel{background:var(--card);border:1px solid var(--border2);border-radius:16px;width:700px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.6);transform:translateY(8px);transition:transform 0.2s}
+.aprendiz-modal.open .aprendiz-panel{transform:translateY(0)}
+.aprendiz-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1}
+.aprendiz-nombre{font-size:1rem;font-weight:700}
+.aprendiz-meta{font-size:0.72rem;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.close-btn{width:28px;height:28px;border-radius:50%;background:var(--card2);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.close-btn:hover{border-color:var(--border2);color:var(--text)}
+.aprendiz-body{padding:20px 24px}
+.guia-detalle{margin-bottom:14px;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden}
+.guia-detalle-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.guia-detalle-nombre{font-size:0.82rem;font-weight:600}
+.guia-detalle-pct{font-family:var(--mono);font-size:0.85rem;font-weight:700}
+.guia-detalle-evs{padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px}
+.ev-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:0.7rem;font-family:var(--mono)}
+.ev-pill.ok{background:rgba(0,245,160,0.1);color:var(--green);border:1px solid rgba(0,245,160,0.2)}
+.ev-pill.no{background:rgba(239,68,68,0.1);color:#FCA5A5;border:1px solid rgba(239,68,68,0.2)}
+
+/* ALERTAS VIEW */
+.alerta-card{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:8px;transition:border-color 0.15s}
+.alerta-card:hover{border-color:var(--border2)}
+.alerta-card.critico{border-left:3px solid var(--red)}
+.alerta-card.riesgo{border-left:3px solid var(--amber)}
+.alerta-num{font-family:var(--mono);font-size:0.65rem;color:var(--text3);min-width:20px}
+.alerta-nombre{font-size:0.85rem;font-weight:600;flex:1}
+.alerta-meta{font-size:0.72rem;color:var(--text3);font-family:var(--mono)}
+.alerta-dias{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--red)}
+
+/* EMPTY / LOADING */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;color:var(--text3);gap:6px;text-align:center}
 .empty-state .icon{font-size:1.8rem;opacity:0.4}
 .empty-state p{font-size:0.78rem}
 .skel{background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,0.04) 50%,var(--card2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ALERT BANNER */
 .alert-banner{display:none;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;font-size:0.78rem;line-height:1.5}
 .alert-banner.show{display:flex}
 .alert-banner.error{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#FCA5A5}
 .alert-banner.info{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#93C5FD}
+
+/* CONFIG MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
 .overlay.open{opacity:1;pointer-events:all}
 .modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:24px;width:460px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,0.6);transform:translateY(8px);transition:transform 0.2s}
@@ -151,15 +249,30 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .field input::placeholder{color:var(--text3)}
 .info-card{background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:var(--radius2);padding:10px 12px;font-size:0.72rem;color:#93C5FD;line-height:1.7;margin:12px 0;font-family:var(--mono)}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+/* SCROLLBAR */
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.kpi-grid{grid-template-columns:1fr 1fr}.charts-grid{grid-template-columns:1fr}.content{padding:14px}}
-@media print{.sidebar,.topbar,.table-controls,.btn,.ficha-tabs,.guia-tabs{display:none!important}.main{margin-left:0}}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.comparativo-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.kpi-grid{grid-template-columns:1fr 1fr}.charts-grid{grid-template-columns:1fr}.content{padding:14px}.comparativo-grid{grid-template-columns:1fr 1fr}}
+
+/* PRINT */
+@media print{
+  .sidebar,.topbar,.table-controls,.btn,.ficha-tabs,.guia-tabs,.view-tabs{display:none!important}
+  .main{margin-left:0}
+  .panel{break-inside:avoid}
+  body{background:white;color:black}
+  .kpi{background:#f8f9fa;border:1px solid #dee2e6}
+  .kpi-val,.kpi-label,.kpi-sub,.panel-title,.panel-sub{color:black!important}
+}
 </style>
 </head>
 <body>
 
+<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-top">
     <div class="logo"><div class="logo-icon">🎯</div><div class="logo-text">Guía<span>Bot</span></div></div>
@@ -168,6 +281,24 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   <nav class="nav">
     <div class="nav-section">Grupos / Fichas</div>
     <div id="nav-fichas"></div>
+    <div class="nav-section">Vistas</div>
+    <a class="nav-item" href="#" onclick="cambiarVista('resumen');return false">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Resumen
+    </a>
+    <a class="nav-item" href="#" onclick="cambiarVista('evidencias');return false">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evidencias
+    </a>
+    <a class="nav-item" href="#" onclick="cambiarVista('alertas');return false">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Alertas
+      <span class="nav-badge red" id="nav-alertas-count">0</span>
+    </a>
+    <a class="nav-item" href="#" onclick="cambiarVista('comparativo');return false">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Comparativo
+    </a>
     <div class="nav-section">Sistema</div>
     <a class="nav-item" href="#" onclick="abrirConfig();return false">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
@@ -186,6 +317,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div>
 </aside>
 
+<!-- CONFIG MODAL -->
 <div class="overlay" id="overlay-config">
   <div class="modal">
     <div class="modal-title">⚙️ Conexión a Supabase</div>
@@ -204,6 +336,21 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div>
 </div>
 
+<!-- APRENDIZ MODAL -->
+<div class="aprendiz-modal" id="aprendiz-modal" onclick="if(event.target===this)cerrarAprendiz()">
+  <div class="aprendiz-panel">
+    <div class="aprendiz-header">
+      <div>
+        <div class="aprendiz-nombre" id="ap-nombre">—</div>
+        <div class="aprendiz-meta" id="ap-meta">—</div>
+      </div>
+      <button class="close-btn" onclick="cerrarAprendiz()">✕</button>
+    </div>
+    <div class="aprendiz-body" id="ap-body"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
 <main class="main">
   <div class="topbar">
     <div>
@@ -216,65 +363,146 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         Actualizar
       </button>
-      <button class="btn btn-primary" onclick="window.print()">
+      <button class="btn btn-ghost" onclick="exportarAlertas()">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar PDF
+        Alertas
       </button>
+      <button class="btn btn-primary" onclick="window.print()">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Imprimir
+      </button>
+    </div>
+  </div>
+
+  <!-- VIEW TABS -->
+  <div class="view-tabs">
+    <div class="view-tab active" id="tab-resumen" onclick="cambiarVista('resumen')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Resumen
+    </div>
+    <div class="view-tab" id="tab-evidencias" onclick="cambiarVista('evidencias')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Evidencias por guía
+    </div>
+    <div class="view-tab" id="tab-alertas" onclick="cambiarVista('alertas')">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      Alertas críticas
+    </div>
+    <div class="view-tab" id="tab-comparativo" onclick="cambiarVista('comparativo')">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Comparativo grupos
     </div>
   </div>
 
   <div class="content">
     <div class="alert-banner" id="alert-banner"></div>
-    <div class="ficha-tabs" id="ficha-tabs"><div class="skel" style="height:32px;width:120px;border-radius:8px"></div><div class="skel" style="height:32px;width:120px;border-radius:8px"></div></div>
+    <div class="ficha-tabs" id="ficha-tabs"></div>
 
-    <div class="kpi-grid">
-      <div class="kpi blue"><div class="kpi-label">Aprendices</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-sub" id="kpi-total-sub">en el grupo</div></div>
-      <div class="kpi green"><div class="kpi-label">Completos</div><div class="kpi-val" id="kpi-completos">—</div><div class="kpi-sub">100% de evidencias</div></div>
-      <div class="kpi amber"><div class="kpi-label">Parcial</div><div class="kpi-val" id="kpi-parcial">—</div><div class="kpi-sub">al menos 1 evidencia</div></div>
-      <div class="kpi red"><div class="kpi-label">Sin entregar</div><div class="kpi-val" id="kpi-pendientes">—</div><div class="kpi-sub">0 evidencias</div></div>
-    </div>
-
-    <div class="guia-tabs" id="guia-tabs"></div>
-
-    <div class="charts-grid">
-      <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">Cumplimiento por guía</div><div class="panel-sub">% promedio del grupo</div></div></div>
-        <div class="panel-body"><div class="chart-wrap"><canvas id="chart-bar"></canvas></div></div>
+    <!-- ═══ VISTA: RESUMEN ═══ -->
+    <div class="view active" id="view-resumen">
+      <div class="kpi-grid">
+        <div class="kpi blue"><div class="kpi-label">Aprendices</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-sub" id="kpi-total-sub">en el grupo</div></div>
+        <div class="kpi green"><div class="kpi-label">✅ Completos</div><div class="kpi-val" id="kpi-completos">—</div><div class="kpi-sub">100% evidencias</div></div>
+        <div class="kpi amber"><div class="kpi-label">🟡 Parcial</div><div class="kpi-val" id="kpi-parcial">—</div><div class="kpi-sub">al menos 1</div></div>
+        <div class="kpi red"><div class="kpi-label">🔴 Crítico</div><div class="kpi-val" id="kpi-pendientes">—</div><div class="kpi-sub">0 evidencias</div></div>
+        <div class="kpi purple"><div class="kpi-label">📋 Guías</div><div class="kpi-val" id="kpi-guias">—</div><div class="kpi-sub" id="kpi-guias-sub">activas</div></div>
       </div>
-      <div class="panel">
-        <div class="panel-header"><div><div class="panel-title">Estado del grupo</div><div class="panel-sub">Por aprendiz único</div></div></div>
-        <div class="panel-body"><div class="chart-wrap"><canvas id="chart-donut"></canvas></div></div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-header">
-        <div><div class="panel-title" id="tabla-titulo">Evidencias por aprendiz</div><div class="panel-sub" id="tabla-sub">Selecciona una guía arriba</div></div>
-      </div>
-      <div class="table-controls">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="search-input" type="text" placeholder="Buscar aprendiz..." oninput="buscar(this.value)">
+      <div class="charts-grid">
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Cumplimiento por guía</div><div class="panel-sub">% promedio del grupo</div></div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="chart-bar"></canvas></div></div>
         </div>
-        <div class="filter-group">
-          <button class="filter-btn active" onclick="setFiltro('todos',this)">Todos</button>
-          <button class="filter-btn" onclick="setFiltro('completo',this)">Completos</button>
-          <button class="filter-btn" onclick="setFiltro('parcial',this)">Parcial</button>
-          <button class="filter-btn" onclick="setFiltro('pendiente',this)">Pendientes</button>
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Distribución del grupo</div><div class="panel-sub">Por semáforo de riesgo</div></div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="chart-donut"></canvas></div></div>
         </div>
       </div>
-      <div class="tabla-wrap">
-        <table>
-          <thead id="tabla-head"><tr><th>#</th><th>Aprendiz</th><th>Progreso</th><th>Estado</th></tr></thead>
-          <tbody id="tabla-body"><tr><td colspan="4"><div class="empty-state"><div class="icon">⏳</div><p>Cargando...</p></div></td></tr></tbody>
-        </table>
+      <!-- TOP APRENDICES -->
+      <div class="charts-grid">
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">🏆 Mejor cumplimiento</div><div class="panel-sub">Top 5 aprendices</div></div></div>
+          <div class="panel-body" id="top-mejores"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">⚠️ Requieren atención</div><div class="panel-sub">Menor cumplimiento</div></div></div>
+          <div class="panel-body" id="top-peores"></div>
+        </div>
       </div>
     </div>
+
+    <!-- ═══ VISTA: EVIDENCIAS ═══ -->
+    <div class="view" id="view-evidencias">
+      <div class="guia-tabs" id="guia-tabs"></div>
+      <div class="panel">
+        <div class="panel-header">
+          <div><div class="panel-title" id="tabla-titulo">Evidencias por aprendiz</div><div class="panel-sub" id="tabla-sub">Selecciona una guía</div></div>
+        </div>
+        <div class="table-controls">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" type="text" placeholder="Buscar aprendiz..." oninput="buscar(this.value)">
+          </div>
+          <div class="filter-group">
+            <button class="filter-btn active" onclick="setFiltro('todos',this)">Todos</button>
+            <button class="filter-btn" onclick="setFiltro('completo',this)">Completos</button>
+            <button class="filter-btn" onclick="setFiltro('parcial',this)">Parcial</button>
+            <button class="filter-btn" onclick="setFiltro('pendiente',this)">Pendientes</button>
+          </div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead id="tabla-head"><tr><th>#</th><th>Aprendiz</th><th>Progreso</th><th>Estado</th></tr></thead>
+            <tbody id="tabla-body"><tr><td colspan="4"><div class="empty-state"><div class="icon">👆</div><p>Selecciona una guía</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VISTA: ALERTAS ═══ -->
+    <div class="view" id="view-alertas">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi red"><div class="kpi-label">🔴 Crítico (0%)</div><div class="kpi-val" id="alerta-critico">—</div><div class="kpi-sub">sin ninguna entrega</div></div>
+        <div class="kpi amber"><div class="kpi-label">🟡 En riesgo (1-50%)</div><div class="kpi-val" id="alerta-riesgo">—</div><div class="kpi-sub">entrega insuficiente</div></div>
+        <div class="kpi blue"><div class="kpi-label">🔵 Al día (51-99%)</div><div class="kpi-val" id="alerta-aldia">—</div><div class="kpi-sub">avanzando bien</div></div>
+        <div class="kpi green"><div class="kpi-label">✅ Completo (100%)</div><div class="kpi-val" id="alerta-completo">—</div><div class="kpi-sub">todas las evidencias</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div><div class="panel-title">Semáforo de riesgo</div><div class="panel-sub" id="alertas-sub">Clasificación por cumplimiento general</div></div>
+          <div style="display:flex;gap:6px">
+            <button class="filter-btn f-critico" onclick="setFiltroAlerta('critico',this)">🔴 Crítico</button>
+            <button class="filter-btn f-riesgo" onclick="setFiltroAlerta('riesgo',this)">🟡 Riesgo</button>
+            <button class="filter-btn f-aldia" onclick="setFiltroAlerta('aldia',this)">🔵 Al día</button>
+            <button class="filter-btn active" onclick="setFiltroAlerta('todos',this)">Todos</button>
+          </div>
+        </div>
+        <div class="panel-body" id="alertas-lista"></div>
+      </div>
+    </div>
+
+    <!-- ═══ VISTA: COMPARATIVO ═══ -->
+    <div class="view" id="view-comparativo">
+      <div class="comparativo-grid" id="comp-cards"></div>
+      <div class="charts-grid">
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Cumplimiento por grupo</div><div class="panel-sub">% promedio general de cada ficha</div></div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="chart-comp-bar"></canvas></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div><div class="panel-title">Distribución comparativa</div><div class="panel-sub">Completos vs Parcial vs Crítico</div></div></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="chart-comp-stack"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 
 <script>
-const KEY='guiabot_v3';
+// ════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════
+const KEY='guiabot_v4';
 function getCfg(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch{return{};}}
 function saveCfg(c){localStorage.setItem(KEY,JSON.stringify(c));}
 function abrirConfig(){const c=getCfg();document.getElementById('cfg-url').value=c.url||'';document.getElementById('cfg-key').value=c.key||'';document.getElementById('cfg-docente').value=c.docenteId||'';document.getElementById('overlay-config').classList.add('open');}
@@ -282,13 +510,47 @@ function cerrarConfig(){document.getElementById('overlay-config').classList.remo
 function guardarConfig(){const c={url:document.getElementById('cfg-url').value.trim(),key:document.getElementById('cfg-key').value.trim(),docenteId:document.getElementById('cfg-docente').value.trim()};if(!c.url||!c.key||!c.docenteId){alert('Completa todos los campos.');return;}saveCfg(c);cerrarConfig();cargarDatos();}
 document.getElementById('overlay-config').addEventListener('click',function(e){if(e.target===this)cerrarConfig();});
 
+// ════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ════════════════════════════════════════════════
 let FICHAS={};
-let fichaActual='',guiaActual='',filtroEstado='todos',busquedaVal='';
-let barChart=null,donutChart=null;
+let fichaActual='',guiaActual='',vistaActual='resumen';
+let filtroEstado='todos',filtroAlerta='todos',busquedaVal='';
+let barChart=null,donutChart=null,compBarChart=null,compStackChart=null;
 
+// ════════════════════════════════════════════════
+// VISTAS
+// ════════════════════════════════════════════════
+function cambiarVista(v){
+  vistaActual=v;
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.view-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('tab-'+v).classList.add('active');
+  // Actualizar nav sidebar
+  document.querySelectorAll('.nav .nav-item').forEach(el=>el.classList.remove('active'));
+
+  if(v==='resumen'||v==='evidencias'){
+    // Mostrar ficha tabs solo en estas vistas
+    document.getElementById('ficha-tabs').style.display='flex';
+  } else {
+    document.getElementById('ficha-tabs').style.display='none';
+  }
+
+  if(FICHAS && Object.keys(FICHAS).length>0){
+    if(v==='resumen') renderResumen();
+    else if(v==='evidencias') renderEvidencias();
+    else if(v==='alertas') renderAlertas();
+    else if(v==='comparativo') renderComparativo();
+  }
+}
+
+// ════════════════════════════════════════════════
+// CARGAR DATOS SUPABASE
+// ════════════════════════════════════════════════
 async function cargarDatos(){
   const c=getCfg();
-  if(!c.url||!c.key||!c.docenteId){setStatus('offline','Sin conexión');setConn('offline');showBanner('Configura Supabase en el menú Configuración.','info');return;}
+  if(!c.url||!c.key||!c.docenteId){setStatus('offline','Sin conexión');setConn('offline');showBanner('Configura la conexión a Supabase en Configuración.','info');return;}
   setStatus('loading','Cargando...');setConn('loading');hideBanner();setBtnSpin(true);
   try{
     const db=supabase.createClient(c.url,c.key);
@@ -310,7 +572,20 @@ async function cargarDatos(){
 
     renderFichaTabs();
     if(!fichaActual||!FICHAS[fichaActual])fichaActual=Object.keys(FICHAS)[0]||'';
-    renderFichaActual();
+    renderFichaTabs(); // re-render con ficha seleccionada
+
+    // Contar alertas críticas totales
+    let totalCriticos=0;
+    for(const f of Object.values(FICHAS)){
+      const ap=agruparPorAprendizGeneral(f.data);
+      for(const evs of Object.values(ap)){
+        const ok=Object.values(evs).filter(Boolean).length;
+        if(ok===0)totalCriticos++;
+      }
+    }
+    document.getElementById('nav-alertas-count').textContent=totalCriticos;
+
+    cambiarVista(vistaActual);
 
     const h=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setStatus('online',`Activo · ${h} · ${(rows||[]).length} reg`);
@@ -320,114 +595,166 @@ async function cargarDatos(){
   }finally{setBtnSpin(false);}
 }
 
+// ════════════════════════════════════════════════
+// FICHA TABS
+// ════════════════════════════════════════════════
 function renderFichaTabs(){
   const fs=Object.keys(FICHAS);
   document.getElementById('nav-fichas').innerHTML=fs.map(f=>`
     <a class="nav-item ${f===fichaActual?'active':''}" href="#" onclick="seleccionarFicha('${f}');return false">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       ${f}
-      <span class="nav-badge">${aprendicesUnicos(FICHAS[f].data)}</span>
+      <span class="nav-badge green">${aprendicesUnicos(FICHAS[f].data)}</span>
     </a>`).join('');
-  document.getElementById('ficha-tabs').innerHTML=fs.map(f=>`
-    <div class="ficha-tab ${f===fichaActual?'active':''}" onclick="seleccionarFicha('${f}')">
-      ${f}
-      <div class="ficha-tab-sub">${FICHAS[f].colegio||''} · ${aprendicesUnicos(FICHAS[f].data)} aprendices</div>
-    </div>`).join('');
+
+  // Solo mostrar ficha-tabs en vistas que lo necesitan
+  if(vistaActual==='resumen'||vistaActual==='evidencias'){
+    document.getElementById('ficha-tabs').innerHTML=fs.map(f=>{
+      const col=FICHAS[f].colegio||'';
+      const colCorto=col.length>30?col.slice(0,30)+'…':col;
+      return`<div class="ficha-tab ${f===fichaActual?'active':''}" onclick="seleccionarFicha('${f}')">
+        ${f}
+        <div class="ficha-tab-sub">${colCorto} · ${aprendicesUnicos(FICHAS[f].data)} aprendices</div>
+      </div>`;
+    }).join('');
+  }
 }
 
-function seleccionarFicha(f){fichaActual=f;guiaActual='';filtroEstado='todos';busquedaVal='';renderFichaTabs();renderFichaActual();}
+function seleccionarFicha(f){
+  fichaActual=f;guiaActual='';filtroEstado='todos';busquedaVal='';
+  renderFichaTabs();
+  if(vistaActual==='resumen')renderResumen();
+  else if(vistaActual==='evidencias')renderEvidencias();
+}
 
-function renderFichaActual(){
+// ════════════════════════════════════════════════
+// VISTA RESUMEN
+// ════════════════════════════════════════════════
+function renderResumen(){
   if(!fichaActual||!FICHAS[fichaActual])return;
   const rows=FICHAS[fichaActual].data;
   const guias=[...new Set(rows.map(r=>r.guia))].sort();
-  if(!guiaActual||!guias.includes(guiaActual))guiaActual=guias[0]||'';
-  renderKPIs(rows);
-  renderGuiaTabs(guias);
-  renderCharts(rows,guias);
-  renderTabla(rows);
-}
 
-function renderKPIs(rows){
-  const ap=agruparPorAprendiz(rows);
+  // KPIs generales del grupo
+  const ap=agruparPorAprendizGeneral(rows);
   const nombres=Object.keys(ap);
   const total=nombres.length;
   let completos=0,parciales=0,pendientes=0;
+  const porcentajes=[];
+
   for(const n of nombres){
     const evs=Object.values(ap[n]);
     const ok=evs.filter(Boolean).length;
     const tot=evs.length;
-    if(ok===tot&&tot>0)completos++;
-    else if(ok===0)pendientes++;
+    const pct=tot>0?Math.round(ok/tot*100):0;
+    porcentajes.push({nombre:n,pct});
+    if(pct===100)completos++;
+    else if(pct===0)pendientes++;
     else parciales++;
   }
-  const pct=total>0?Math.round((completos/total)*100):0;
+
+  const pctGral=total>0?Math.round(porcentajes.reduce((a,b)=>a+b.pct,0)/total):0;
   document.getElementById('kpi-total').textContent=total;
-  document.getElementById('kpi-total-sub').textContent=`${pct}% cumplimiento general`;
+  document.getElementById('kpi-total-sub').textContent=`${pctGral}% cumplimiento general`;
   document.getElementById('kpi-completos').textContent=completos;
   document.getElementById('kpi-parcial').textContent=parciales;
   document.getElementById('kpi-pendientes').textContent=pendientes;
+  document.getElementById('kpi-guias').textContent=guias.length;
+  document.getElementById('kpi-guias-sub').textContent='guías en esta ficha';
+
+  // Charts
+  renderBarChart(rows,guias);
+  renderDonutChart(completos,parciales,pendientes,total-completos-parciales-pendientes);
+
+  // Top mejores y peores
+  const sorted=porcentajes.sort((a,b)=>b.pct-a.pct);
+  renderTopLista('top-mejores',sorted.slice(0,5),true);
+  renderTopLista('top-peores',sorted.slice(-5).reverse(),false);
 }
 
-function renderGuiaTabs(guias){
-  document.getElementById('guia-tabs').innerHTML=guias.map(g=>{
-    const l=g.replace(/\.pdf$/i,'').replace(/_/g,' ');
-    return`<div class="guia-tab ${g===guiaActual?'active':''}" onclick="seleccionarGuia('${g}')">${l}</div>`;
-  }).join('');
+function renderTopLista(id,lista,bueno){
+  document.getElementById(id).innerHTML=lista.map((item,i)=>{
+    const cls=item.pct>=80?'green':item.pct>=50?'amber':'red';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);min-width:16px">${String(i+1).padStart(2,'0')}</span>
+      <span style="flex:1;font-size:0.82rem;font-weight:500">${item.nombre}</span>
+      <div class="prog-wrap" style="min-width:100px">
+        <div class="prog-bar"><div class="prog-fill ${cls}" style="width:${item.pct}%"></div></div>
+        <div class="prog-label">${item.pct}%</div>
+      </div>
+    </div>`;
+  }).join('')||`<div class="empty-state"><div class="icon">—</div><p>Sin datos</p></div>`;
 }
 
-function seleccionarGuia(g){
-  guiaActual=g;
-  const guias=[...new Set(FICHAS[fichaActual].data.map(r=>r.guia))].sort();
-  renderGuiaTabs(guias);
-  renderTabla(FICHAS[fichaActual].data);
-}
-
-function renderCharts(rows,guias){
+function renderBarChart(rows,guias){
   const fc='#475569',gc='rgba(255,255,255,0.04)';
   const cols=['#00F5A0','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#EC4899'];
-
   const barVals=guias.map(g=>{
     const rg=rows.filter(r=>r.guia===g);
     const ap=agruparAprendicesPorGuia(rg);
     const pcts=Object.values(ap).map(evs=>{const t=Object.keys(evs).length;const ok=Object.values(evs).filter(Boolean).length;return t>0?ok/t*100:0;});
     return pcts.length>0?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
   });
-  const barLabels=guias.map(g=>{const l=g.replace(/\.pdf$/i,'').replace(/_/g,' ');return l.length>14?l.slice(0,14)+'…':l;});
-
+  const barLabels=guias.map(g=>{const l=g;return l.length>14?l.slice(0,14)+'…':l;});
   if(barChart)barChart.destroy();
   barChart=new Chart(document.getElementById('chart-bar'),{
     type:'bar',
     data:{labels:barLabels.length?barLabels:['Sin datos'],datasets:[{data:barVals.length?barVals:[0],backgroundColor:barLabels.map((_,i)=>cols[i%cols.length]+'CC'),borderColor:barLabels.map((_,i)=>cols[i%cols.length]),borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:fc,font:{size:9,family:"'JetBrains Mono'"}},grid:{color:gc},border:{display:false}},y:{min:0,max:100,ticks:{color:fc,font:{size:9,family:"'JetBrains Mono'"},callback:v=>v+'%'},grid:{color:gc},border:{display:false}}}}
   });
+}
 
-  const ap=agruparPorAprendiz(rows);
-  let comp=0,parc=0,pend=0;
-  for(const evs of Object.values(ap)){const ok=Object.values(evs).filter(Boolean).length;const t=Object.keys(evs).length;if(ok===t&&t>0)comp++;else if(ok===0)pend++;else parc++;}
-
+function renderDonutChart(comp,parc,pend,otros){
+  const fc='#475569';
   if(donutChart)donutChart.destroy();
   donutChart=new Chart(document.getElementById('chart-donut'),{
     type:'doughnut',
-    data:{labels:['Completos','Parcial','Pendientes'],datasets:[{data:[comp,parc,pend],backgroundColor:['rgba(0,245,160,0.85)','rgba(245,158,11,0.85)','rgba(239,68,68,0.85)'],borderColor:'#111827',borderWidth:3,hoverOffset:6}]},
+    data:{labels:['✅ Completos','🟡 Parcial','🔴 Crítico'],datasets:[{data:[comp,parc,pend],backgroundColor:['rgba(0,245,160,0.85)','rgba(245,158,11,0.85)','rgba(239,68,68,0.85)'],borderColor:'#111827',borderWidth:3,hoverOffset:6}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{position:'bottom',labels:{color:fc,font:{size:10,family:"'JetBrains Mono'"},padding:12,boxWidth:9,boxHeight:9}}}}
   });
 }
 
-function renderTabla(rows){
-  if(!guiaActual){document.getElementById('tabla-body').innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="icon">👆</div><p>Selecciona una guía</p></div></td></tr>`;return;}
+// ════════════════════════════════════════════════
+// VISTA EVIDENCIAS
+// ════════════════════════════════════════════════
+function renderEvidencias(){
+  if(!fichaActual||!FICHAS[fichaActual])return;
+  const rows=FICHAS[fichaActual].data;
+  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+  if(!guiaActual||!guias.includes(guiaActual))guiaActual=guias[0]||'';
+  renderGuiaTabs(guias);
+  renderTablaEvidencias(rows);
+}
+
+function renderGuiaTabs(guias){
+  document.getElementById('guia-tabs').innerHTML=guias.map(g=>
+    `<div class="guia-tab ${g===guiaActual?'active':''}" onclick="seleccionarGuia('${g}')">${g}</div>`
+  ).join('');
+}
+
+function seleccionarGuia(g){
+  guiaActual=g;
+  const rows=FICHAS[fichaActual].data;
+  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+  renderGuiaTabs(guias);
+  renderTablaEvidencias(rows);
+}
+
+function renderTablaEvidencias(rows){
+  if(!guiaActual){
+    document.getElementById('tabla-body').innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="icon">👆</div><p>Selecciona una guía</p></div></td></tr>`;
+    return;
+  }
   const rg=rows.filter(r=>r.guia===guiaActual);
   const evidencias=[...new Set(rg.map(r=>r.evidencia))].sort();
   const ap=agruparAprendicesPorGuia(rg);
-  const guiaNombre=guiaActual.replace(/\.pdf$/i,'').replace(/_/g,' ');
-  document.getElementById('tabla-titulo').textContent=guiaNombre;
+  document.getElementById('tabla-titulo').textContent=guiaActual;
   document.getElementById('tabla-sub').textContent=`${Object.keys(ap).length} aprendices · ${evidencias.length} evidencias`;
 
-  const evLabels=evidencias.map(e=>e.replace(/\.\w+$/,'').replace(/_/g,' '));
   document.getElementById('tabla-head').innerHTML=`<tr>
     <th>#</th><th>Aprendiz</th>
-    ${evLabels.map(e=>`<th class="ev-th">${e.length>10?e.slice(0,10)+'…':e}</th>`).join('')}
-    <th>Progreso</th><th>Estado</th>
+    ${evidencias.map(e=>`<th class="ev-th" title="${e}">${e.length>10?e.slice(0,10)+'…':e}</th>`).join('')}
+    <th>Progreso</th><th>Semáforo</th>
   </tr>`;
 
   let datos=Object.entries(ap).map(([nombre,evs])=>{
@@ -440,30 +767,298 @@ function renderTabla(rows){
     const mE=filtroEstado==='todos'||d.estado===filtroEstado;
     const mB=!busquedaVal||d.nombre.toLowerCase().includes(busquedaVal.toLowerCase());
     return mE&&mB;
-  }).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  }).sort((a,b)=>b.pct-a.pct||a.nombre.localeCompare(b.nombre));
 
   if(!datos.length){document.getElementById('tabla-body').innerHTML=`<tr><td colspan="${4+evidencias.length}"><div class="empty-state"><div class="icon">🔍</div><p>Sin resultados</p></div></td></tr>`;return;}
 
   document.getElementById('tabla-body').innerHTML=datos.map((d,i)=>{
-    const fc=d.pct>=80?'green':d.pct>=40?'amber':'red';
-    const bc=d.estado==='completo'?'badge-green':d.estado==='parcial'?'badge-amber':'badge-red';
-    const bl=d.estado==='completo'?'Completo':d.estado==='parcial'?'Parcial':'Pendiente';
+    const fc=d.pct>=80?'green':d.pct>=50?'amber':'red';
+    const sem=getSemaforo(d.pct);
     const evs=evidencias.map(e=>{const v=d.evs[e];if(v===undefined)return`<td class="ev-cell ev-nd">—</td>`;return`<td class="ev-cell ${v?'ev-ok':'ev-no'}">${v?'✓':'✗'}</td>`;}).join('');
-    return`<tr>
+    return`<tr onclick="abrirAprendiz('${d.nombre.replace(/'/g,"\\'")}')">
       <td style="color:var(--text3);font-family:var(--mono);font-size:0.62rem">${String(i+1).padStart(2,'0')}</td>
-      <td style="font-weight:500;white-space:nowrap;font-size:0.8rem">${d.nombre}</td>
+      <td style="font-weight:500;white-space:nowrap;font-size:0.82rem">${d.nombre}</td>
       ${evs}
       <td><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill ${fc}" style="width:${d.pct}%"></div></div><div class="prog-label">${d.pct}%</div></div></td>
-      <td><span class="badge ${bc}">${bl}</span></td>
+      <td><span class="${sem.cls}">${sem.label}</span></td>
     </tr>`;
   }).join('');
 }
 
-function agruparPorAprendiz(rows){const m={};for(const r of rows){if(!m[r.estudiante])m[r.estudiante]={};m[r.estudiante][r.guia+'|||'+r.evidencia]=r.entregado;}return m;}
-function agruparAprendicesPorGuia(rows){const m={};for(const r of rows){if(!m[r.estudiante])m[r.estudiante]={};m[r.estudiante][r.evidencia]=r.entregado;}return m;}
+// ════════════════════════════════════════════════
+// VISTA ALERTAS
+// ════════════════════════════════════════════════
+function renderAlertas(){
+  // Consolidar todos los aprendices de todas las fichas
+  let todos=[];
+  for(const[ficha,f] of Object.entries(FICHAS)){
+    const ap=agruparPorAprendizGeneral(f.data);
+    for(const[nombre,evs] of Object.entries(ap)){
+      const ok=Object.values(evs).filter(Boolean).length;
+      const tot=Object.keys(evs).length;
+      const pct=tot>0?Math.round(ok/tot*100):0;
+      const dias=diasSinEntregar(f.data,nombre);
+      todos.push({nombre,pct,ficha,colegio:f.colegio,dias,ok,tot});
+    }
+  }
+
+  todos.sort((a,b)=>a.pct-b.pct||b.dias-a.dias);
+
+  const criticos=todos.filter(a=>a.pct===0);
+  const riesgo=todos.filter(a=>a.pct>0&&a.pct<=50);
+  const aldia=todos.filter(a=>a.pct>50&&a.pct<100);
+  const completos=todos.filter(a=>a.pct===100);
+
+  document.getElementById('alerta-critico').textContent=criticos.length;
+  document.getElementById('alerta-riesgo').textContent=riesgo.length;
+  document.getElementById('alerta-aldia').textContent=aldia.length;
+  document.getElementById('alerta-completo').textContent=completos.length;
+  document.getElementById('nav-alertas-count').textContent=criticos.length;
+
+  let filtrados=todos;
+  if(filtroAlerta==='critico')filtrados=criticos;
+  else if(filtroAlerta==='riesgo')filtrados=riesgo;
+  else if(filtroAlerta==='aldia')filtrados=aldia;
+  else if(filtroAlerta==='completo')filtrados=completos;
+
+  document.getElementById('alertas-sub').textContent=`${filtrados.length} aprendices · ${criticos.length} críticos en total`;
+
+  if(!filtrados.length){
+    document.getElementById('alertas-lista').innerHTML=`<div class="empty-state"><div class="icon">✅</div><p>Sin alertas en esta categoría</p></div>`;
+    return;
+  }
+
+  document.getElementById('alertas-lista').innerHTML=filtrados.map((a,i)=>{
+    const sem=getSemaforo(a.pct);
+    const diasText=a.dias>0?`${a.dias}d sin entregar`:'reciente';
+    return`<div class="alerta-card ${a.pct===0?'critico':a.pct<=50?'riesgo':''}">
+      <span class="alerta-num">${String(i+1).padStart(2,'0')}</span>
+      <div style="flex:1">
+        <div class="alerta-nombre">${a.nombre}</div>
+        <div class="alerta-meta">${a.ficha} · ${a.colegio||''} · ${a.ok}/${a.tot} evidencias</div>
+      </div>
+      <div class="prog-wrap" style="min-width:90px">
+        <div class="prog-bar"><div class="prog-fill ${a.pct>=80?'green':a.pct>=50?'amber':'red'}" style="width:${a.pct}%"></div></div>
+        <div class="prog-label">${a.pct}%</div>
+      </div>
+      <span class="${sem.cls}">${sem.label}</span>
+      ${a.dias>7?`<span class="alerta-dias">${diasText}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function setFiltroAlerta(tipo,btn){
+  filtroAlerta=tipo;
+  document.querySelectorAll('.panel-header .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlertas();
+}
+
+// ════════════════════════════════════════════════
+// VISTA COMPARATIVO
+// ════════════════════════════════════════════════
+function renderComparativo(){
+  const fs=Object.keys(FICHAS);
+  const fc='#475569',gc='rgba(255,255,255,0.04)';
+  const cols=['#00F5A0','#3B82F6','#F59E0B','#8B5CF6','#EF4444'];
+
+  const datos=fs.map((f,i)=>{
+    const rows=FICHAS[f].data;
+    const ap=agruparPorAprendizGeneral(rows);
+    const nombres=Object.keys(ap);
+    let comp=0,parc=0,pend=0;
+    const pcts=[];
+    for(const evs of Object.values(ap)){
+      const ok=Object.values(evs).filter(Boolean).length;
+      const tot=Object.keys(evs).length;
+      const pct=tot>0?Math.round(ok/tot*100):0;
+      pcts.push(pct);
+      if(pct===100)comp++;else if(pct===0)pend++;else parc++;
+    }
+    const avg=pcts.length>0?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
+    return{ficha:f,colegio:FICHAS[f].colegio,total:nombres.length,avg,comp,parc,pend,color:cols[i%cols.length]};
+  });
+
+  // Cards
+  document.getElementById('comp-cards').innerHTML=datos.map(d=>`
+    <div class="comp-card">
+      <div class="comp-ficha">${d.ficha}</div>
+      <div class="comp-colegio">${(d.colegio||'').replace(/^[A-Z]+ — /,'')}</div>
+      <div class="comp-pct" style="color:${d.color}">${d.avg}%</div>
+      <div class="comp-sub">${d.total} aprendices</div>
+      <div class="comp-bar"><div class="comp-bar-fill" style="width:${d.avg}%;background:${d.color}"></div></div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+        <span style="font-size:0.62rem;color:var(--green);font-family:var(--mono)">✅${d.comp}</span>
+        <span style="font-size:0.62rem;color:var(--amber);font-family:var(--mono)">🟡${d.parc}</span>
+        <span style="font-size:0.62rem;color:var(--red);font-family:var(--mono)">🔴${d.pend}</span>
+      </div>
+    </div>`).join('');
+
+  // Bar chart comparativo
+  if(compBarChart)compBarChart.destroy();
+  compBarChart=new Chart(document.getElementById('chart-comp-bar'),{
+    type:'bar',
+    data:{
+      labels:datos.map(d=>d.ficha),
+      datasets:[{label:'Cumplimiento %',data:datos.map(d=>d.avg),backgroundColor:datos.map(d=>d.color+'CC'),borderColor:datos.map(d=>d.color),borderWidth:1,borderRadius:6,borderSkipped:false}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:fc,font:{size:10,family:"'JetBrains Mono'"}},grid:{color:gc},border:{display:false}},y:{min:0,max:100,ticks:{color:fc,callback:v=>v+'%'},grid:{color:gc},border:{display:false}}}}
+  });
+
+  // Stacked bar
+  if(compStackChart)compStackChart.destroy();
+  compStackChart=new Chart(document.getElementById('chart-comp-stack'),{
+    type:'bar',
+    data:{
+      labels:datos.map(d=>d.ficha),
+      datasets:[
+        {label:'✅ Completos',data:datos.map(d=>d.comp),backgroundColor:'rgba(0,245,160,0.8)',borderRadius:0,borderSkipped:false},
+        {label:'🟡 Parcial',data:datos.map(d=>d.parc),backgroundColor:'rgba(245,158,11,0.8)',borderRadius:0,borderSkipped:false},
+        {label:'🔴 Crítico',data:datos.map(d=>d.pend),backgroundColor:'rgba(239,68,68,0.8)',borderRadius:0,borderSkipped:false},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:fc,font:{size:10,family:"'JetBrains Mono'"},padding:12,boxWidth:9,boxHeight:9}}},scales:{x:{stacked:true,ticks:{color:fc,font:{size:10,family:"'JetBrains Mono'"}},grid:{color:gc},border:{display:false}},y:{stacked:true,ticks:{color:fc},grid:{color:gc},border:{display:false}}}}
+  });
+}
+
+// ════════════════════════════════════════════════
+// MODAL APRENDIZ INDIVIDUAL
+// ════════════════════════════════════════════════
+function abrirAprendiz(nombre){
+  if(!fichaActual||!FICHAS[fichaActual])return;
+  const rows=FICHAS[fichaActual].data.filter(r=>r.estudiante===nombre);
+  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+
+  const ap=agruparPorAprendizGeneral(FICHAS[fichaActual].data);
+  const evsTodas=Object.values(ap[nombre]||{});
+  const okTotal=evsTodas.filter(Boolean).length;
+  const totTotal=evsTodas.length;
+  const pctTotal=totTotal>0?Math.round(okTotal/totTotal*100):0;
+  const sem=getSemaforo(pctTotal);
+
+  document.getElementById('ap-nombre').textContent=nombre;
+  document.getElementById('ap-meta').textContent=`Ficha ${fichaActual} · ${okTotal}/${totTotal} evidencias totales · ${pctTotal}% cumplimiento`;
+
+  let html=`<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
+    <div class="prog-wrap" style="flex:1"><div class="prog-bar" style="height:6px"><div class="prog-fill ${pctTotal>=80?'green':pctTotal>=50?'amber':'red'}" style="width:${pctTotal}%"></div></div><div class="prog-label" style="font-size:0.8rem">${pctTotal}%</div></div>
+    <span class="${sem.cls}">${sem.label}</span>
+  </div>`;
+
+  for(const guia of guias){
+    const rgGuia=rows.filter(r=>r.guia===guia);
+    const evs={};
+    for(const r of rgGuia)evs[r.evidencia]=r.entregado;
+    const ok=Object.values(evs).filter(Boolean).length;
+    const tot=Object.keys(evs).length;
+    const pct=tot>0?Math.round(ok/tot*100):0;
+    const cls=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+
+    html+=`<div class="guia-detalle">
+      <div class="guia-detalle-header">
+        <div class="guia-detalle-nombre">${guia}</div>
+        <div class="guia-detalle-pct" style="color:${cls}">${ok}/${tot} · ${pct}%</div>
+      </div>
+      <div class="guia-detalle-evs">
+        ${Object.entries(evs).sort().map(([ev,v])=>`<span class="ev-pill ${v?'ok':'no'}">${v?'✓':'✗'} ${ev}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('ap-body').innerHTML=html;
+  document.getElementById('aprendiz-modal').classList.add('open');
+}
+
+function cerrarAprendiz(){document.getElementById('aprendiz-modal').classList.remove('open');}
+
+// ════════════════════════════════════════════════
+// EXPORTAR ALERTAS
+// ════════════════════════════════════════════════
+function exportarAlertas(){
+  let texto='REPORTE DE ALERTAS — GuíaBot\n';
+  texto+=`Generado: ${new Date().toLocaleString('es-CO')}\n\n`;
+
+  for(const[ficha,f] of Object.entries(FICHAS)){
+    const ap=agruparPorAprendizGeneral(f.data);
+    const criticos=[];
+    for(const[nombre,evs] of Object.entries(ap)){
+      const ok=Object.values(evs).filter(Boolean).length;
+      const tot=Object.keys(evs).length;
+      const pct=tot>0?Math.round(ok/tot*100):0;
+      if(pct<50)criticos.push({nombre,pct,ok,tot});
+    }
+    if(criticos.length>0){
+      texto+=`FICHA ${ficha} — ${f.colegio||''}\n`;
+      texto+='─'.repeat(50)+'\n';
+      criticos.sort((a,b)=>a.pct-b.pct).forEach((c,i)=>{
+        texto+=`${String(i+1).padStart(2,'0')}. ${c.nombre} — ${c.pct}% (${c.ok}/${c.tot} evidencias)\n`;
+      });
+      texto+='\n';
+    }
+  }
+
+  const blob=new Blob([texto],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`Alertas_GuiaBot_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════
+// AGRUPACIONES
+// ════════════════════════════════════════════════
+function agruparPorAprendizGeneral(rows){
+  // { nombre: { guia|||evidencia: bool } }
+  const m={};
+  for(const r of rows){
+    if(!m[r.estudiante])m[r.estudiante]={};
+    m[r.estudiante][r.guia+'|||'+r.evidencia]=r.entregado;
+  }
+  return m;
+}
+
+function agruparAprendicesPorGuia(rows){
+  const m={};
+  for(const r of rows){
+    if(!m[r.estudiante])m[r.estudiante]={};
+    m[r.estudiante][r.evidencia]=r.entregado;
+  }
+  return m;
+}
+
 function aprendicesUnicos(rows){return new Set(rows.map(r=>r.estudiante)).size;}
-function setFiltro(t,btn){filtroEstado=t;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(fichaActual&&FICHAS[fichaActual])renderTabla(FICHAS[fichaActual].data);}
-function buscar(v){busquedaVal=v;if(fichaActual&&FICHAS[fichaActual])renderTabla(FICHAS[fichaActual].data);}
+
+function diasSinEntregar(rows,nombre){
+  const rowsAprendiz=rows.filter(r=>r.estudiante===nombre&&r.fecha);
+  if(!rowsAprendiz.length)return 0;
+  const ultima=new Date(Math.max(...rowsAprendiz.map(r=>new Date(r.fecha))));
+  return Math.floor((new Date()-ultima)/(1000*60*60*24));
+}
+
+function getSemaforo(pct){
+  if(pct===0)return{cls:'semaforo semaforo-critico',label:'🔴 Crítico'};
+  if(pct<=50)return{cls:'semaforo semaforo-riesgo',label:'🟡 En riesgo'};
+  if(pct<100)return{cls:'semaforo semaforo-aldia',label:'🔵 Al día'};
+  return{cls:'semaforo semaforo-completo',label:'✅ Completo'};
+}
+
+// ════════════════════════════════════════════════
+// FILTROS TABLA
+// ════════════════════════════════════════════════
+function setFiltro(t,btn){
+  filtroEstado=t;
+  document.querySelectorAll('.filter-group .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(fichaActual&&FICHAS[fichaActual])renderTablaEvidencias(FICHAS[fichaActual].data);
+}
+
+function buscar(v){
+  busquedaVal=v;
+  if(fichaActual&&FICHAS[fichaActual])renderTablaEvidencias(FICHAS[fichaActual].data);
+}
+
+// ════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════
 function setStatus(t,m){document.getElementById('status-dot').className='status-dot '+t;document.getElementById('status-text').textContent=m;}
 function setConn(t){document.getElementById('conn-dot').className='conn-dot '+t;}
 function setBtnSpin(s){document.getElementById('btn-refresh').classList.toggle('spinning',s);}
@@ -471,11 +1066,18 @@ function showBanner(m,t='error'){const el=document.getElementById('alert-banner'
 function hideBanner(){document.getElementById('alert-banner').classList.remove('show');}
 function capitalizar(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
 
+// Auto-refresh cada 5 min
 setInterval(()=>{const c=getCfg();if(c.url&&c.key&&c.docenteId)cargarDatos();},5*60*1000);
 
+// INIT
 (function(){
   const c=getCfg();
-  if(!c.url||!c.key||!c.docenteId){setStatus('offline','Sin conexión');setConn('offline');showBanner('Configura Supabase en el menú Configuración.','info');document.getElementById('ficha-tabs').innerHTML='';return;}
+  if(!c.url||!c.key||!c.docenteId){
+    setStatus('offline','Sin conexión');setConn('offline');
+    showBanner('Configura la conexión a Supabase en el menú Configuración.','info');
+    document.getElementById('ficha-tabs').innerHTML='';
+    return;
+  }
   cargarDatos();
 })();
 </script>
