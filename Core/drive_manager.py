@@ -63,6 +63,20 @@ def _palabras_clave(texto_normalizado: str) -> set[str]:
     return {p for p in palabras if len(p) > 3 and p not in PALABRAS_IGNORAR}
  
  
+def _singularizar(palabra: str) -> str:
+    """
+    Reduce una palabra española a su forma aproximada en singular.
+    Sirve para comparar 'cotizaciones' con 'cotizacion', 'fotos' con 'foto', etc.
+    """
+    if len(palabra) <= 4:
+        return palabra
+    if palabra.endswith('es') and len(palabra) > 4:
+        return palabra[:-2]
+    if palabra.endswith(('as', 'os', 's')) and len(palabra) > 3:
+        return palabra[:-1]
+    return palabra
+
+
 def _coincide(nombre_evidencia: str, nombre_drive: str, debug: bool = False) -> bool:
     """
     Determina si un archivo del Drive corresponde a una evidencia requerida.
@@ -103,7 +117,23 @@ def _coincide(nombre_evidencia: str, nombre_drive: str, debug: bool = False) -> 
         bi_drive = bigramas(palabras_drive)
         if bi_ev & bi_drive:
             return True
- 
+
+    # Estrategia 4: Comparación en singular
+    # Detecta que "cotizaciones" y "cotizacion" son la misma evidencia
+    raices_ev    = {_singularizar(p) for p in palabras_ev}
+    raices_drive = {_singularizar(p) for p in palabras_drive}
+
+    if raices_ev and raices_drive:
+        comunes_sing = raices_ev & raices_drive
+        porcentaje_sing = len(comunes_sing) / len(raices_ev)
+
+        if debug and comunes_sing:
+            print(f"      [singular] raices_ev={raices_ev} | drive={raices_drive} | "
+                  f"comunes={comunes_sing} | {porcentaje_sing:.0%}")
+
+        if porcentaje_sing >= 0.5:
+            return True
+
     return False
  
  
