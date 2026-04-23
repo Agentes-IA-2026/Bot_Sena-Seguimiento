@@ -703,7 +703,7 @@ function renderBarChart(rows,guias){
     const pcts=Object.values(ap).map(evs=>{const t=Object.keys(evs).length;const ok=Object.values(evs).filter(Boolean).length;return t>0?ok/t*100:0;});
     return pcts.length>0?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
   });
-  const barLabels=guias.map(g=>{const l=g;return l.length>14?l.slice(0,14)+'…':l;});
+  const barLabels=guias.map(g=>{const l=guiaLabel(g);return l.length>14?l.slice(0,14)+'…':l;});
   if(barChart)barChart.destroy();
   barChart=new Chart(document.getElementById('chart-bar'),{
     type:'bar',
@@ -734,9 +734,13 @@ function renderEvidencias(){
   renderTablaEvidencias(rows);
 }
 
+function guiaLabel(g){
+  // Normaliza dobles espacios y muestra nombre limpio
+  return g.replace(/\s{2,}/g,' ').replace(/Guía_?\s*/i,'Guía ').trim();
+}
 function renderGuiaTabs(guias){
   document.getElementById('guia-tabs').innerHTML=guias.map(g=>
-    `<div class="guia-tab ${g===guiaActual?'active':''}" onclick="seleccionarGuia('${g}')">${g}</div>`
+    `<div class="guia-tab ${g===guiaActual?'active':''}" onclick="seleccionarGuia('${g}')" title="${guiaLabel(g)}">${guiaLabel(g)}</div>`
   ).join('');
 }
 
@@ -756,7 +760,7 @@ function renderTablaEvidencias(rows){
   const rg=rows.filter(r=>r.guia===guiaActual);
   const evidencias=[...new Set(rg.map(r=>r.evidencia))].sort();
   const ap=agruparAprendicesPorGuia(rg);
-  document.getElementById('tabla-titulo').textContent=guiaActual;
+  document.getElementById('tabla-titulo').textContent=guiaLabel(guiaActual);
   document.getElementById('tabla-sub').textContent=`${Object.keys(ap).length} aprendices · ${evidencias.length} evidencias`;
 
   document.getElementById('tabla-head').innerHTML=`<tr>
@@ -963,7 +967,7 @@ function abrirAprendiz(nombre){
 
     html+=`<div class="guia-detalle">
       <div class="guia-detalle-header">
-        <div class="guia-detalle-nombre">${guia}</div>
+        <div class="guia-detalle-nombre">${guiaLabel(guia)}</div>
         <div class="guia-detalle-pct" style="color:${cls}">${ok}/${tot} · ${pct}%</div>
       </div>
       <div class="guia-detalle-evs">

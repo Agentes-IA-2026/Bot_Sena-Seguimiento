@@ -71,7 +71,8 @@ def _guardar_en_supabase(resultados: list[dict], ficha: str, colegio: str, sigla
             for nombre_guia, evidencias in aprendiz.get("guias", {}).items():
                 # Nombre limpio de la guía (sin extensión .pdf)
                 guia_limpia = re.sub(r'\.pdf$', '', nombre_guia, flags=re.IGNORECASE)
-                guia_limpia = guia_limpia.replace('_', ' ').strip()
+                guia_limpia = guia_limpia.replace('_', ' ')
+                guia_limpia = re.sub(r' {2,}', ' ', guia_limpia).strip()
 
                 for evidencia, entregado in evidencias.items():
                     # Nombre limpio de evidencia (sin extensión)
@@ -164,15 +165,18 @@ def _leer_evidencias_de_guias(carpeta_guias: str) -> dict:
 
     for pdf in todos:
         nombre = os.path.basename(pdf)
-        evidencias = extraer_nombres_evidencias_manual(pdf)
+        # Primero intentar extracción automática del PDF
+        evidencias = extraer_nombres_evidencias(pdf, debug=False)
         if not evidencias:
-            print(f"   🔍 Leyendo evidencias automáticamente: {nombre}")
-            evidencias = extraer_nombres_evidencias(pdf, debug=False)
+            # Como respaldo, usar la lista manual
+            evidencias = extraer_nombres_evidencias_manual(pdf)
         if evidencias:
             guias[nombre] = evidencias
             print(f"   📋 {nombre}: {len(evidencias)} evidencia(s)")
         else:
-            print(f"   ⚠️  Sin evidencias en: {nombre}")
+            # Incluir la guía con marcador para que aparezca en el dashboard
+            guias[nombre] = ["Evidencia pendiente de configurar"]
+            print(f"   ⚠️  Sin evidencias configuradas para: {nombre}")
     return guias
 
 
