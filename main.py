@@ -165,11 +165,11 @@ def _leer_evidencias_de_guias(carpeta_guias: str) -> dict:
 
     for pdf in todos:
         nombre = os.path.basename(pdf)
-        # Primero intentar extracción automática del PDF
-        evidencias = extraer_nombres_evidencias(pdf, debug=False)
+        # Primero usar lista manual (limpia y confiable)
+        evidencias = extraer_nombres_evidencias_manual(pdf)
         if not evidencias:
-            # Como respaldo, usar la lista manual
-            evidencias = extraer_nombres_evidencias_manual(pdf)
+            # Solo si no hay lista manual, extraer automáticamente del PDF
+            evidencias = extraer_nombres_evidencias(pdf, debug=False)
         if evidencias:
             guias[nombre] = evidencias
             print(f"   📋 {nombre}: {len(evidencias)} evidencia(s)")
