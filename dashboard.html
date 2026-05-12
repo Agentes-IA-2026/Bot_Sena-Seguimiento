@@ -299,7 +299,16 @@ tbody tr:hover td{background:rgba(255,255,255,0.03)}
       <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Comparativo
     </a>
+    <a class="nav-item" href="#" onclick="cambiarVista('acumulado');return false">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Acumulado
+    </a>
     <div class="nav-section">Sistema</div>
+    <!-- nav: Auditoría -->
+    <a class="nav-item" href="#" onclick="cambiarVista('auditoria');return false">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Auditoría
+    </a>
     <a class="nav-item" href="#" onclick="abrirConfig();return false">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
       Configuración
@@ -325,7 +334,9 @@ tbody tr:hover td{background:rgba(255,255,255,0.03)}
     <div class="field"><label>Supabase URL</label><input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co"></div>
     <div class="field"><label>Anon Public Key</label><input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></div>
     <div class="field"><label>Docente ID (UUID)</label><input type="text" id="cfg-docente" placeholder="d114d85c-..."></div>
-    <div class="info-card">📍 URL y Anon Key → Supabase › Settings › API<br>📍 Docente ID → tabla <strong>docentes</strong> › columna <strong>id</strong></div>
+    <!-- Campo URL del backend Railway para el panel de Auditoría -->
+    <div class="field"><label>Backend URL (Railway)</label><input type="text" id="cfg-backend" placeholder="https://guiabot-production-xxxx.up.railway.app"></div>
+    <div class="info-card">📍 URL y Anon Key → Supabase › Settings › API<br>📍 Docente ID → tabla <strong>docentes</strong> › columna <strong>id</strong><br>📍 Backend URL → Railway › tu servicio › URL pública</div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cerrarConfig()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarConfig()">
@@ -391,6 +402,15 @@ tbody tr:hover td{background:rgba(255,255,255,0.03)}
     <div class="view-tab" id="tab-comparativo" onclick="cambiarVista('comparativo')">
       <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Comparativo grupos
+    </div>
+    <div class="view-tab" id="tab-acumulado" onclick="cambiarVista('acumulado')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Acumulado
+    </div>
+    <!-- tab: Auditoría -->
+    <div class="view-tab" id="tab-auditoria" onclick="cambiarVista('auditoria')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Auditoría
     </div>
   </div>
 
@@ -495,6 +515,65 @@ tbody tr:hover td{background:rgba(255,255,255,0.03)}
       </div>
     </div>
 
+    <!-- ═══ VISTA: ACUMULADO ═══ -->
+    <div class="view" id="view-acumulado">
+      <div id="acum-kpis" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Progreso acumulado por aprendiz</div>
+            <div class="panel-sub" id="acum-sub">Todas las guías auditadas · ficha activa</div>
+          </div>
+        </div>
+        <div class="panel-body" style="overflow-x:auto">
+          <div id="acum-tabla"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VISTA: AUDITORÍA ═══ -->
+    <div class="view" id="view-auditoria">
+      <div class="panel" style="max-width:620px">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Ejecutar Auditoría</div>
+            <div class="panel-sub">Lanza la revisión de evidencias en Google Drive y actualiza Supabase</div>
+          </div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:16px;padding:20px">
+
+          <!-- Selector ficha -->
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:0.78rem;color:var(--text2);font-weight:600">Ficha</label>
+            <select id="aud-ficha" style="background:var(--card2);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius2);font-size:0.82rem;font-family:var(--font);cursor:pointer">
+              <option value="">— selecciona una ficha —</option>
+            </select>
+          </div>
+
+          <!-- Selector guía -->
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:0.78rem;color:var(--text2);font-weight:600">Guía</label>
+            <select id="aud-guia" style="background:var(--card2);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:var(--radius2);font-size:0.82rem;font-family:var(--font);cursor:pointer">
+              <option value="">Todas las guías</option>
+            </select>
+          </div>
+
+          <!-- Botón + estado -->
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <button id="btn-auditar" class="btn btn-primary" style="gap:7px;padding:8px 18px;font-size:0.85rem">
+              <svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Ejecutar auditoría
+            </button>
+            <span id="estado-auditoria" style="font-size:0.8rem;color:var(--text2);font-family:var(--mono)"></span>
+          </div>
+
+          <!-- Resultado detalle -->
+          <div id="aud-resultado" style="display:none;background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius2);padding:14px;font-size:0.8rem;font-family:var(--mono);line-height:1.8"></div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -505,9 +584,26 @@ tbody tr:hover td{background:rgba(255,255,255,0.03)}
 const KEY='guiabot_v4';
 function getCfg(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch{return{};}}
 function saveCfg(c){localStorage.setItem(KEY,JSON.stringify(c));}
-function abrirConfig(){const c=getCfg();document.getElementById('cfg-url').value=c.url||'';document.getElementById('cfg-key').value=c.key||'';document.getElementById('cfg-docente').value=c.docenteId||'';document.getElementById('overlay-config').classList.add('open');}
+// Incluye backendUrl en la config guardada
+function abrirConfig(){
+  const c=getCfg();
+  document.getElementById('cfg-url').value=c.url||'';
+  document.getElementById('cfg-key').value=c.key||'';
+  document.getElementById('cfg-docente').value=c.docenteId||'';
+  document.getElementById('cfg-backend').value=c.backendUrl||'';
+  document.getElementById('overlay-config').classList.add('open');
+}
 function cerrarConfig(){document.getElementById('overlay-config').classList.remove('open');}
-function guardarConfig(){const c={url:document.getElementById('cfg-url').value.trim(),key:document.getElementById('cfg-key').value.trim(),docenteId:document.getElementById('cfg-docente').value.trim()};if(!c.url||!c.key||!c.docenteId){alert('Completa todos los campos.');return;}saveCfg(c);cerrarConfig();cargarDatos();}
+function guardarConfig(){
+  const c={
+    url:document.getElementById('cfg-url').value.trim(),
+    key:document.getElementById('cfg-key').value.trim(),
+    docenteId:document.getElementById('cfg-docente').value.trim(),
+    backendUrl:document.getElementById('cfg-backend').value.trim(),
+  };
+  if(!c.url||!c.key||!c.docenteId){alert('Completa los campos de Supabase.');return;}
+  saveCfg(c);cerrarConfig();cargarDatos();
+}
 document.getElementById('overlay-config').addEventListener('click',function(e){if(e.target===this)cerrarConfig();});
 
 // ════════════════════════════════════════════════
@@ -530,18 +626,17 @@ function cambiarVista(v){
   // Actualizar nav sidebar
   document.querySelectorAll('.nav .nav-item').forEach(el=>el.classList.remove('active'));
 
-  if(v==='resumen'||v==='evidencias'){
-    // Mostrar ficha tabs solo en estas vistas
-    document.getElementById('ficha-tabs').style.display='flex';
-  } else {
-    document.getElementById('ficha-tabs').style.display='none';
-  }
+  // Ficha-tabs solo en vistas que operan por ficha
+  document.getElementById('ficha-tabs').style.display=
+    (v==='resumen'||v==='evidencias'||v==='acumulado') ? 'flex' : 'none';
 
   if(FICHAS && Object.keys(FICHAS).length>0){
-    if(v==='resumen') renderResumen();
-    else if(v==='evidencias') renderEvidencias();
-    else if(v==='alertas') renderAlertas();
+    if(v==='resumen')        renderResumen();
+    else if(v==='evidencias')  renderEvidencias();
+    else if(v==='alertas')     renderAlertas();
     else if(v==='comparativo') renderComparativo();
+    else if(v==='acumulado')   renderAcumulado();
+    else if(v==='auditoria')   initAuditoriaUI();
   }
 }
 
@@ -631,8 +726,9 @@ function renderFichaTabs(){
 function seleccionarFicha(f){
   fichaActual=f;guiaActual='';filtroEstado='todos';busquedaVal='';
   renderFichaTabs();
-  if(vistaActual==='resumen')renderResumen();
-  else if(vistaActual==='evidencias')renderEvidencias();
+  if(vistaActual==='resumen')         renderResumen();
+  else if(vistaActual==='evidencias') renderEvidencias();
+  else if(vistaActual==='acumulado')  renderAcumulado();
 }
 
 // ════════════════════════════════════════════════
@@ -1069,6 +1165,100 @@ function buscar(v){
 }
 
 // ════════════════════════════════════════════════
+// VISTA: ACUMULADO
+// ════════════════════════════════════════════════
+function renderAcumulado(){
+  if(!fichaActual||!FICHAS[fichaActual]){
+    document.getElementById('acum-tabla').innerHTML='<p style="color:var(--text3);padding:20px">Sin datos para esta ficha.</p>';
+    return;
+  }
+  const rows=FICHAS[fichaActual].data;
+  if(!rows.length){
+    document.getElementById('acum-tabla').innerHTML='<p style="color:var(--text3);padding:20px">Sin registros. Ejecuta una auditoría primero.</p>';
+    return;
+  }
+
+  // Guías únicas (columnas), ordenadas alfabéticamente
+  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+
+  // Estudiantes únicos (filas)
+  const estudiantes=[...new Set(rows.map(r=>r.estudiante))].sort();
+
+  // Agrupar: byEst[est][guia] = {ok, total}
+  const byEst={};
+  for(const r of rows){
+    if(!byEst[r.estudiante]) byEst[r.estudiante]={};
+    if(!byEst[r.estudiante][r.guia]) byEst[r.estudiante][r.guia]={ok:0,total:0};
+    byEst[r.estudiante][r.guia].total++;
+    if(r.entregado) byEst[r.estudiante][r.guia].ok++;
+  }
+
+  // KPIs de ficha
+  let fichaTotal=0, fichaOk=0;
+  for(const est of estudiantes){
+    for(const g of guias){
+      const d=byEst[est]?.[g];
+      if(d){fichaTotal+=d.total; fichaOk+=d.ok;}
+    }
+  }
+  const fichaPct=fichaTotal>0?Math.round(fichaOk/fichaTotal*100):0;
+
+  document.getElementById('acum-sub').textContent=
+    `${guias.length} guía(s) auditada(s) · ${estudiantes.length} aprendices · ficha ${fichaActual}`;
+
+  // KPI cards
+  const kpiFn=(label,val,color)=>
+    `<div class="kpi ${color}" style="min-width:130px;flex:1">
+       <div class="kpi-label">${label}</div>
+       <div class="kpi-val">${val}</div>
+     </div>`;
+  document.getElementById('acum-kpis').innerHTML=
+    kpiFn('Aprendices',estudiantes.length,'blue')+
+    kpiFn('Guías',guias.length,'purple')+
+    kpiFn('Evidencias esperadas',fichaTotal,'amber')+
+    kpiFn('Verificadas',fichaOk,'green')+
+    kpiFn('% General',fichaPct+'%', fichaPct>=80?'green':fichaPct>=50?'amber':'red');
+
+  // Color semáforo por porcentaje
+  function semColor(pct){
+    return pct===100?'#00F5A0':pct>=80?'#00D98B':pct>=50?'#F59E0B':'#EF4444';
+  }
+  function pctCell(ok,total){
+    if(!total) return '<td style="color:var(--text3);text-align:center">—</td>';
+    const p=Math.round(ok/total*100);
+    return `<td style="text-align:center;font-weight:600;color:${semColor(p)};font-family:var(--mono)">${p}%<br><span style="font-size:0.65rem;opacity:0.7">${ok}/${total}</span></td>`;
+  }
+
+  // Tabla: filas=aprendices, columnas=guías + Total
+  const colWidth=Math.max(110, Math.floor(560/guias.length))+'px';
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:0.8rem">
+    <thead><tr style="border-bottom:1px solid var(--border2)">
+      <th style="text-align:left;padding:10px 12px;color:var(--text2);position:sticky;left:0;background:var(--card)">Aprendiz</th>`;
+  for(const g of guias)
+    html+=`<th style="text-align:center;padding:10px 8px;color:var(--text2);min-width:${colWidth};font-size:0.72rem">${g}</th>`;
+  html+=`<th style="text-align:center;padding:10px 12px;color:var(--green);min-width:90px">TOTAL</th>
+    </tr></thead><tbody>`;
+
+  for(const est of estudiantes){
+    let estOk=0,estTotal=0;
+    let cells='';
+    for(const g of guias){
+      const d=byEst[est]?.[g];
+      if(d){estOk+=d.ok;estTotal+=d.total; cells+=pctCell(d.ok,d.total);}
+      else cells+=`<td style="text-align:center;color:var(--text3)">—</td>`;
+    }
+    const totalPct=estTotal>0?Math.round(estOk/estTotal*100):0;
+    html+=`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 12px;font-weight:500;position:sticky;left:0;background:var(--card)">${est}</td>
+      ${cells}
+      <td style="text-align:center;font-weight:700;font-size:0.9rem;color:${semColor(totalPct)};font-family:var(--mono)">${totalPct}%</td>
+    </tr>`;
+  }
+  html+=`</tbody></table>`;
+  document.getElementById('acum-tabla').innerHTML=html;
+}
+
+// ════════════════════════════════════════════════
 // UTILS
 // ════════════════════════════════════════════════
 function setStatus(t,m){document.getElementById('status-dot').className='status-dot '+t;document.getElementById('status-text').textContent=m;}
@@ -1092,6 +1282,117 @@ setInterval(()=>{const c=getCfg();if(c.url&&c.key&&c.docenteId)cargarDatos();},5
   }
   cargarDatos();
 })();
+
+// ════════════════════════════════════════════════
+// PANEL DE AUDITORÍA
+// ════════════════════════════════════════════════
+
+// Devuelve la URL base del backend (Railway), sin barra final.
+function getBackendUrl() {
+  return (getCfg().backendUrl || '').replace(/\/$/, '');
+}
+
+// Popula el select de fichas a partir de FICHAS (ya cargado desde Supabase)
+// y, si la API backend está disponible, también carga la lista de fichas con programa.
+function initAuditoriaUI() {
+  const selFicha = document.getElementById('aud-ficha');
+  const selGuia  = document.getElementById('aud-guia');
+
+  // Poblar fichas desde los datos ya en memoria (FICHAS viene de Supabase)
+  const fichasConocidas = Object.keys(FICHAS || {});
+  selFicha.innerHTML = '<option value="">— selecciona una ficha —</option>'
+    + fichasConocidas.map(f =>
+        `<option value="${f}">${f}${FICHAS[f].colegio ? ' — '+FICHAS[f].colegio : ''}</option>`
+      ).join('');
+
+  // Al cambiar la ficha, cargar guías desde la API
+  selFicha.onchange = async () => {
+    const fichaId = selFicha.value;
+    selGuia.innerHTML = '<option value="">Todas las guías</option>';
+    if (!fichaId) return;
+    const backend = getBackendUrl();
+    if (!backend) return;
+    try {
+      const resp = await fetch(`${backend}/api/guias?ficha_id=${encodeURIComponent(fichaId)}`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      (data.guias || []).forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        selGuia.appendChild(opt);
+      });
+    } catch(_) { /* sin backend → sin guías dinámicas, pero igual funciona con "Todas" */ }
+  };
+}
+
+// Lanza la auditoría y refresca los datos al terminar
+document.getElementById('btn-auditar').addEventListener('click', async () => {
+  const fichaId  = document.getElementById('aud-ficha').value;
+  const guiaId   = document.getElementById('aud-guia').value || null;
+  const estadoEl = document.getElementById('estado-auditoria');
+  const resEl    = document.getElementById('aud-resultado');
+  const btn      = document.getElementById('btn-auditar');
+  const backend  = getBackendUrl();
+
+  if (!fichaId) { estadoEl.textContent = '⚠ Selecciona una ficha primero'; return; }
+  if (!backend) {
+    estadoEl.textContent = '⚠ Configura el Backend URL en Configuración';
+    return;
+  }
+
+  // Estado: auditando
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  estadoEl.style.color = 'var(--amber)';
+  estadoEl.textContent = 'Auditando… esto puede tardar 1-3 min';
+  resEl.style.display  = 'none';
+
+  try {
+    const resp = await fetch(`${backend}/api/auditar`, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ ficha_id: fichaId, guia_id: guiaId }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      estadoEl.style.color = 'var(--red)';
+      estadoEl.textContent = `Error ${resp.status}: ${data.detail || 'ver logs del servidor'}`;
+      return;
+    }
+
+    // Éxito
+    estadoEl.style.color = 'var(--green)';
+    estadoEl.textContent =
+      `✅ Listo: ${data.entregadas}/${data.total} entregadas`
+      + (data.advertencias ? ` · ⚠ ${data.advertencias} con advertencia` : '')
+      + ` · ${data.duracion_segundos}s`;
+
+    resEl.style.display = 'block';
+    resEl.innerHTML = `
+      <strong>Ficha:</strong>   ${data.ficha}<br>
+      <strong>Programa:</strong> ${data.programa}<br>
+      <strong>Guía:</strong>    ${data.guia}<br>
+      <strong>Aprendices:</strong> ${data.aprendices ?? '—'}<br>
+      <strong>Entregadas:</strong> ${data.entregadas} / ${data.total}
+        ${data.total > 0 ? '(' + Math.round(data.entregadas/data.total*100) + '%)' : ''}<br>
+      <strong>Advertencias:</strong> ${data.advertencias}<br>
+      <strong>Duración:</strong> ${data.duracion_segundos}s
+    `.replace(/ {4}/g, '');  // quita sangría extra
+
+    // Recargar datos de Supabase para reflejar los cambios
+    await cargarDatos();
+
+  } catch (err) {
+    estadoEl.style.color = 'var(--red)';
+    estadoEl.textContent = 'Error de conexión con el backend';
+    console.error('[auditoría]', err);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('spinning');
+  }
+});
 </script>
 </body>
 </html>

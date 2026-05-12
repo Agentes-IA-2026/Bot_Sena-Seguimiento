@@ -1,3 +1,8 @@
 pandas
 openpyxl
 google-api-python-client
+certifi
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
