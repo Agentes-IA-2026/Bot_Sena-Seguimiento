@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -1075,7 +1075,13 @@ function renderComparativo(){
 // MODAL APRENDIZ INDIVIDUAL
 // ════════════════════════════════════════════════
 function abrirAprendiz(nombre){
-  // FIX: cachear refs al inicio — si alguno no existe el error aparece de inmediato
+  // Validar nombre al inicio — dataset.nombre puede devolver undefined si el atributo falta
+  if(!nombre || typeof nombre !== 'string'){
+    console.error('[abrirAprendiz] nombre inválido recibido:', nombre);
+    return;
+  }
+
+  // Cachear refs DOM; si alguno falta el error es inmediato y claro
   const modal    = document.getElementById('aprendiz-modal');
   const apBody   = document.getElementById('ap-body');
   const apNombre = document.getElementById('ap-nombre');
@@ -1085,73 +1091,71 @@ function abrirAprendiz(nombre){
     return;
   }
 
-  // FIX: try/catch completo — garantiza que el modal SIEMPRE abre,
-  // incluso si hay un error de datos; el catch muestra el mensaje de error dentro del panel.
+  // Variable de contexto para el catch — se actualiza en cada iteración del bucle de guías
+  let _guiaEnCurso = '(antes del bucle)';
+
   try{
-    if(!fichaActual||!FICHAS[fichaActual])throw new Error('Sin ficha activa o datos no cargados');
+    if(!fichaActual||!FICHAS[fichaActual])
+      throw new Error('Sin ficha activa o datos no cargados (fichaActual="'+fichaActual+'")');
 
-    const rows=FICHAS[fichaActual].data.filter(r=>r.estudiante===nombre);
-    const guias=_guiasUnicas(rows);
+    const rows = FICHAS[fichaActual].data.filter(r => r.estudiante === nombre);
+    const guias = _guiasUnicas(rows);
 
-    const ap=agruparPorAprendizGeneral(FICHAS[fichaActual].data);
-    const evsTodas=Object.values(ap[nombre]||{});
-    const okTotal=evsTodas.filter(Boolean).length;
-    const totTotal=evsTodas.length;
-    const pctTotal=totTotal>0?Math.round(okTotal/totTotal*100):0;
-    const sem=getSemaforo(pctTotal);
+    const ap       = agruparPorAprendizGeneral(FICHAS[fichaActual].data);
+    const evsTodas = Object.values(ap[nombre]||{});
+    const okTotal  = evsTodas.filter(Boolean).length;
+    const totTotal = evsTodas.length;
+    const pctTotal = totTotal>0 ? Math.round(okTotal/totTotal*100) : 0;
+    const sem      = getSemaforo(pctTotal);
 
-    apNombre.textContent=nombre;
-    apMeta.textContent=`Ficha ${fichaActual} · ${okTotal}/${totTotal} evidencias totales · ${pctTotal}% cumplimiento`;
+    apNombre.textContent = nombre;
+    apMeta.textContent   = `Ficha ${fichaActual} · ${okTotal}/${totTotal} evidencias totales · ${pctTotal}% cumplimiento`;
 
-    let html=`<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
+    let html = `<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
       <div class="prog-wrap" style="flex:1"><div class="prog-bar" style="height:6px"><div class="prog-fill ${pctTotal>=80?'green':pctTotal>=50?'amber':'red'}" style="width:${pctTotal}%"></div></div><div class="prog-label" style="font-size:0.8rem">${pctTotal}%</div></div>
       <span class="${sem.cls}">${sem.label}</span>
     </div>`;
 
     if(!guias.length){
-      // FIX: caso sin guías auditadas — mensaje en lugar de sección vacía
-      html+='<p style="color:var(--text3);font-size:0.8rem;padding:4px 0">Sin guías auditadas para este aprendiz.</p>';
+      html += '<p style="color:var(--text3);font-size:0.8rem;padding:4px 0">Sin guías auditadas para este aprendiz.</p>';
     }
 
     for(const guia of guias){
-      const _normG=_normGuia(guia);
-      const rgGuia=rows.filter(r=>_normGuia(r.guia)===_normG);
+      _guiaEnCurso = guia; // actualizar contexto para el catch
+
+      const _normG  = _normGuia(guia);
+      const rgGuia  = rows.filter(r => _normGuia(r.guia) === _normG);
 
       // Deduplicar evidencias por clave normalizada — mismo patrón que _guiasUnicas.
-      // evs es un objeto plano {label: entregado(bool)} construido con for..of
-      // para máxima compatibilidad (sin Object.fromEntries que falla en Safari < 12.1).
-      const _evsMap=new Map();
+      // Usa for..of en lugar de Object.fromEntries (Safari < 12.1 no lo soporta).
+      const _evsMap = new Map();
       for(const r of rgGuia){
-        // FIX: omitir filas sin evidencia (r.evidencia null/undefined evita key vacía)
-        if(r.evidencia==null)continue;
-        const k=_normGuia(r.evidencia);
-        const prev=_evsMap.get(k);
-        if(!prev){_evsMap.set(k,{label:r.evidencia,entregado:!!r.entregado});continue;}
-        // FIX: _sc usa \u escapes ASCII-safe (los literales áéíóúñ pueden corromperse en deploy)
-        const _sc=s=>(s.match(/[a-záéíóúñ]/g)||[]).length;
+        if(r.evidencia == null) continue; // omitir filas sin evidencia
+        const k    = _normGuia(r.evidencia);
+        const prev = _evsMap.get(k);
+        if(!prev){ _evsMap.set(k,{label:r.evidencia,entregado:!!r.entregado}); continue; }
+        // _sc: \u escapes ASCII-safe — literales áéíóúñ se corrompen al copiar/desplegar
+        const _sc = s => (s.match(/[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1]/g)||[]).length;
         _evsMap.set(k,{
-          label:_sc(r.evidencia)>_sc(prev.label)?r.evidencia:prev.label,
-          entregado:prev.entregado||!!r.entregado,
+          label    : _sc(r.evidencia) > _sc(prev.label) ? r.evidencia : prev.label,
+          entregado: prev.entregado || !!r.entregado,
         });
       }
 
-      // FIX: construir objeto plano con for..of en vez de Object.fromEntries+map
-      // Evita el crash en Safari < 12.1 donde Object.fromEntries no existe.
-      const evs={};
-      for(const{label,entregado}of _evsMap.values()){evs[label]=entregado;}
+      const evs = {};
+      for(const {label,entregado} of _evsMap.values()){ evs[label] = entregado; }
 
-      const ok=Object.values(evs).filter(Boolean).length;
-      const tot=Object.keys(evs).length;
-      const pct=tot>0?Math.round(ok/tot*100):0;
-      const cls=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+      const ok  = Object.values(evs).filter(Boolean).length;
+      const tot = Object.keys(evs).length;
+      const pct = tot > 0 ? Math.round(ok/tot*100) : 0;
+      const cls = pct>=80 ? 'var(--green)' : pct>=50 ? 'var(--amber)' : 'var(--red)';
 
-      // FIX: sort con comparador explícito — evita comparaciones [key,bool] ambiguas
-      const chips=Object.entries(evs)
-        .sort(([a],[b])=>a.localeCompare(b))
-        .map(([ev,v])=>`<span class="ev-pill ${v?'ok':'no'}">${v?'✓':'✗'} ${ev}</span>`)
+      const chips = Object.entries(evs)
+        .sort(([a],[b]) => a.localeCompare(b))
+        .map(([ev,v]) => `<span class="ev-pill ${v?'ok':'no'}">${v?'✓':'✗'} ${ev}</span>`)
         .join('');
 
-      html+=`<div class="guia-detalle">
+      html += `<div class="guia-detalle">
         <div class="guia-detalle-header">
           <div class="guia-detalle-nombre">${guiaLabel(guia)}</div>
           <div class="guia-detalle-pct" style="color:${cls}">${ok}/${tot} · ${pct}%</div>
@@ -1160,21 +1164,31 @@ function abrirAprendiz(nombre){
       </div>`;
     }
 
-    apBody.innerHTML=html;
+    apBody.innerHTML = html;
 
   }catch(err){
-    // FIX: capturar cualquier error y mostrarlo dentro del modal (no en alert ni consola perdida)
-    console.error('[abrirAprendiz] Error al renderizar detalle de "'+nombre+'":', err);
-    apNombre.textContent=nombre;
-    apMeta.textContent='Error al cargar el detalle';
-    apBody.innerHTML=`<div class="empty-state">
+    // Log detallado con nombre, ficha y guía en curso para diagnóstico en producción
+    console.error(
+      '[abrirAprendiz] Error al renderizar detalle.\n'+
+      '  Aprendiz : "'+nombre+'"\n'+
+      '  Ficha    : "'+fichaActual+'"\n'+
+      '  Guía     : "'+_guiaEnCurso+'"',
+      err
+    );
+    apNombre.textContent = nombre;
+    apMeta.textContent   = 'Error al cargar el detalle';
+    apBody.innerHTML = `<div class="empty-state">
       <div class="icon" style="font-size:2rem">⚠️</div>
       <p>No se pudo cargar el detalle del aprendiz.</p>
       <p style="font-size:0.7rem;color:var(--text3);margin-top:6px;font-family:var(--mono)">${err.message||String(err)}</p>
     </div>`;
+  }finally{
+    // finally garantiza cleanup aunque el catch relance — aquí no hay spinner en el modal,
+    // pero el bloque existe para futuras extensiones y para cerrar el guard de estado.
+    _guiaEnCurso = '';
   }
 
-  // FIX: abrir modal FUERA del try/catch — siempre abre, tanto en éxito como en error
+  // Fuera del try/catch/finally — el modal SIEMPRE se abre, en éxito y en error
   modal.classList.add('open');
 }
 
