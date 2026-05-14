@@ -613,6 +613,7 @@ let FICHAS={};
 let fichaActual='',guiaActual='',vistaActual='resumen';
 let filtroEstado='todos',filtroAlerta='todos',busquedaVal='';
 let barChart=null,donutChart=null,compBarChart=null,compStackChart=null;
+let _loadId=0; // race-condition guard para cargarDatos
 
 // ════════════════════════════════════════════════
 // VISTAS
@@ -647,6 +648,7 @@ async function cargarDatos(){
   const c=getCfg();
   if(!c.url||!c.key||!c.docenteId){setStatus('offline','Sin conexión');setConn('offline');showBanner('Configura la conexión a Supabase en Configuración.','info');return;}
   setStatus('loading','Cargando...');setConn('loading');hideBanner();setBtnSpin(true);
+  const myLoadId=++_loadId; // marca esta carga; si llega una más nueva se descarta
   try{
     const db=supabase.createClient(c.url,c.key);
     const{data:doc,error:eD}=await db.from('docentes').select('nombre,plan').eq('id',c.docenteId).single();
@@ -664,7 +666,7 @@ async function cargarDatos(){
       from+=1000;
     }
     if(eR)throw new Error('Error: '+eR.message);
-    if(eR)throw new Error('Error: '+eR.message);
+    if(myLoadId!==_loadId)return; // carga más nueva ya está en curso, descartar ésta
 
     FICHAS={};
     for(const r of(rows||[])){
@@ -711,7 +713,8 @@ function renderFichaTabs(){
     </a>`).join('');
 
   // Solo mostrar ficha-tabs en vistas que lo necesitan
-  if(vistaActual==='resumen'||vistaActual==='evidencias'){
+  // FIX: incluir 'acumulado' para que ficha-tabs se actualice en esa vista
+  if(vistaActual==='resumen'||vistaActual==='evidencias'||vistaActual==='acumulado'){
     document.getElementById('ficha-tabs').innerHTML=fs.map(f=>{
       const col=FICHAS[f].colegio||'';
       const colCorto=col.length>30?col.slice(0,30)+'…':col;
@@ -724,7 +727,11 @@ function renderFichaTabs(){
 }
 
 function seleccionarFicha(f){
+  if(fichaActual===f)return; // misma ficha: no hacer nada
   fichaActual=f;guiaActual='';filtroEstado='todos';busquedaVal='';
+  // Limpiar chips y tabla de forma inmediata para evitar contenido obsoleto
+  document.getElementById('guia-tabs').innerHTML='';
+  document.getElementById('tabla-body').innerHTML='';
   renderFichaTabs();
   if(vistaActual==='resumen')         renderResumen();
   else if(vistaActual==='evidencias') renderEvidencias();
@@ -737,7 +744,7 @@ function seleccionarFicha(f){
 function renderResumen(){
   if(!fichaActual||!FICHAS[fichaActual])return;
   const rows=FICHAS[fichaActual].data;
-  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+  const guias=_guiasUnicas(rows); // deduplicado por clave canónica
 
   // KPIs generales del grupo
   const ap=agruparPorAprendizGeneral(rows);
@@ -794,7 +801,8 @@ function renderBarChart(rows,guias){
   const fc='#475569',gc='rgba(255,255,255,0.04)';
   const cols=['#00F5A0','#3B82F6','#F59E0B','#8B5CF6','#EF4444','#06B6D4','#EC4899'];
   const barVals=guias.map(g=>{
-    const rg=rows.filter(r=>r.guia===g);
+    const _normG=_normGuia(g);
+    const rg=rows.filter(r=>_normGuia(r.guia)===_normG);
     const ap=agruparAprendicesPorGuia(rg);
     const pcts=Object.values(ap).map(evs=>{const t=Object.keys(evs).length;const ok=Object.values(evs).filter(Boolean).length;return t>0?ok/t*100:0;});
     return pcts.length>0?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
@@ -824,26 +832,57 @@ function renderDonutChart(comp,parc,pend,otros){
 function renderEvidencias(){
   if(!fichaActual||!FICHAS[fichaActual])return;
   const rows=FICHAS[fichaActual].data;
-  const guias=[...new Set(rows.map(r=>r.guia))].sort();
-  if(!guiaActual||!guias.includes(guiaActual))guiaActual=guias[0]||'';
+  const guias=_guiasUnicas(rows); // deduplicado por clave canónica
+  // Resetear guiaActual si no pertenece a este grupo (comparación normalizada)
+  if(!guiaActual||!guias.some(g=>_normGuia(g)===_normGuia(guiaActual)))guiaActual=guias[0]||'';
   renderGuiaTabs(guias);
   renderTablaEvidencias(rows);
 }
 
-function guiaLabel(g){
-  // Normaliza dobles espacios y muestra nombre limpio
-  return g.replace(/\s{2,}/g,' ').replace(/Guía_?\s*/i,'Guía ').trim();
+// Clave canónica para deduplicación y comparaciones (nunca mostrar directamente).
+// "GUIA 00 INDUCCION" y "Guía_00_Inducción" producen la misma clave.
+function _normGuia(g){
+  return(g||'').toLowerCase().replace(/_/g,' ').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
 }
+
+// Lista de guías deduplicada y ordenada a partir de un array de rows.
+// Cuando dos valores BD tienen la misma clave canónica, conserva el mejor formateado
+// (aquel con más caracteres en minúsculas o acentuados, típicamente el más reciente).
+function _guiasUnicas(rows){
+  const best=new Map();
+  for(const r of rows){
+    const raw=(r.guia||'').trim();if(!raw)continue;
+    const key=_normGuia(raw);
+    const prev=best.get(key);
+    if(!prev){best.set(key,raw);continue;}
+    const score=s=>(s.match(/[a-záéíóúñ]/g)||[]).length;
+    if(score(raw)>score(prev))best.set(key,raw);
+  }
+  return[...best.values()].sort((a,b)=>_normGuia(a).localeCompare(_normGuia(b)));
+}
+
+// Etiqueta visual en Title Case; maneja nombres todo-mayúsculas del tipo "GUIA 01 DIAGNOSTICO".
+function guiaLabel(g){
+  const LOWER=new Set(['de','del','y','a','e','o','el','la','los','las','en','con','por','para','al']);
+  return(g||'').replace(/_/g,' ').replace(/\s+/g,' ').trim()
+    .split(' ').map((w,i)=>{
+      if(!w)return w;
+      if(i>0&&LOWER.has(w.toLowerCase()))return w.toLowerCase();
+      return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+    }).join(' ');
+}
+
 function renderGuiaTabs(guias){
+  const normActual=_normGuia(guiaActual);
   document.getElementById('guia-tabs').innerHTML=guias.map(g=>
-    `<div class="guia-tab ${g===guiaActual?'active':''}" onclick="seleccionarGuia('${g}')" title="${guiaLabel(g)}">${guiaLabel(g)}</div>`
+    `<div class="guia-tab ${_normGuia(g)===normActual?'active':''}" onclick="seleccionarGuia('${g.replace(/'/g,"\\'")}')" title="${guiaLabel(g)}">${guiaLabel(g)}</div>`
   ).join('');
 }
 
 function seleccionarGuia(g){
   guiaActual=g;
   const rows=FICHAS[fichaActual].data;
-  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+  const guias=_guiasUnicas(rows); // deduplicado, coherente con renderEvidencias
   renderGuiaTabs(guias);
   renderTablaEvidencias(rows);
 }
@@ -853,7 +892,8 @@ function renderTablaEvidencias(rows){
     document.getElementById('tabla-body').innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="icon">👆</div><p>Selecciona una guía</p></div></td></tr>`;
     return;
   }
-  const rg=rows.filter(r=>r.guia===guiaActual);
+  const _normActual=_normGuia(guiaActual);
+  const rg=rows.filter(r=>_normGuia(r.guia)===_normActual); // tolerante a variaciones de formato
   const evidencias=[...new Set(rg.map(r=>r.evidencia))].sort();
   const ap=agruparAprendicesPorGuia(rg);
   document.getElementById('tabla-titulo').textContent=guiaLabel(guiaActual);
@@ -1035,7 +1075,7 @@ function renderComparativo(){
 function abrirAprendiz(nombre){
   if(!fichaActual||!FICHAS[fichaActual])return;
   const rows=FICHAS[fichaActual].data.filter(r=>r.estudiante===nombre);
-  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+  const guias=_guiasUnicas(rows); // deduplicado por clave canónica
 
   const ap=agruparPorAprendizGeneral(FICHAS[fichaActual].data);
   const evsTodas=Object.values(ap[nombre]||{});
@@ -1053,7 +1093,8 @@ function abrirAprendiz(nombre){
   </div>`;
 
   for(const guia of guias){
-    const rgGuia=rows.filter(r=>r.guia===guia);
+    const _normG=_normGuia(guia);
+    const rgGuia=rows.filter(r=>_normGuia(r.guia)===_normG);
     const evs={};
     for(const r of rgGuia)evs[r.evidencia]=r.entregado;
     const ok=Object.values(evs).filter(Boolean).length;
@@ -1119,7 +1160,8 @@ function agruparPorAprendizGeneral(rows){
   const m={};
   for(const r of rows){
     if(!m[r.estudiante])m[r.estudiante]={};
-    m[r.estudiante][r.guia+'|||'+r.evidencia]=r.entregado;
+    // FIX: _normGuia en la clave evita double-counting cuando misma guía tiene dos formatos
+    m[r.estudiante][_normGuia(r.guia)+'|||'+r.evidencia]=r.entregado;
   }
   return m;
 }
@@ -1178,26 +1220,28 @@ function renderAcumulado(){
     return;
   }
 
-  // Guías únicas (columnas), ordenadas alfabéticamente
-  const guias=[...new Set(rows.map(r=>r.guia))].sort();
+  // Guías únicas (columnas), deduplicadas por clave canónica y ordenadas
+  const guias=_guiasUnicas(rows);
 
   // Estudiantes únicos (filas)
   const estudiantes=[...new Set(rows.map(r=>r.estudiante))].sort();
 
-  // Agrupar: byEst[est][guia] = {ok, total}
+  // Agrupar: byEst[est][normKey] = {ok, total}
+  // La clave normalizada agrupa "GUIA 00 INDUCCION" y "Guía_00_Inducción" en una sola celda.
   const byEst={};
   for(const r of rows){
     if(!byEst[r.estudiante]) byEst[r.estudiante]={};
-    if(!byEst[r.estudiante][r.guia]) byEst[r.estudiante][r.guia]={ok:0,total:0};
-    byEst[r.estudiante][r.guia].total++;
-    if(r.entregado) byEst[r.estudiante][r.guia].ok++;
+    const key=_normGuia(r.guia);
+    if(!byEst[r.estudiante][key]) byEst[r.estudiante][key]={ok:0,total:0};
+    byEst[r.estudiante][key].total++;
+    if(r.entregado) byEst[r.estudiante][key].ok++;
   }
 
   // KPIs de ficha
   let fichaTotal=0, fichaOk=0;
   for(const est of estudiantes){
     for(const g of guias){
-      const d=byEst[est]?.[g];
+      const d=byEst[est]?.[_normGuia(g)]; // leer con clave normalizada
       if(d){fichaTotal+=d.total; fichaOk+=d.ok;}
     }
   }
@@ -1235,7 +1279,8 @@ function renderAcumulado(){
     <thead><tr style="border-bottom:1px solid var(--border2)">
       <th style="text-align:left;padding:10px 12px;color:var(--text2);position:sticky;left:0;background:var(--card)">Aprendiz</th>`;
   for(const g of guias)
-    html+=`<th style="text-align:center;padding:10px 8px;color:var(--text2);min-width:${colWidth};font-size:0.72rem">${g}</th>`;
+    // FIX: usar guiaLabel(g) para Title Case en encabezados del acumulado
+    html+=`<th style="text-align:center;padding:10px 8px;color:var(--text2);min-width:${colWidth};font-size:0.72rem">${guiaLabel(g)}</th>`;
   html+=`<th style="text-align:center;padding:10px 12px;color:var(--green);min-width:90px">TOTAL</th>
     </tr></thead><tbody>`;
 
@@ -1243,7 +1288,7 @@ function renderAcumulado(){
     let estOk=0,estTotal=0;
     let cells='';
     for(const g of guias){
-      const d=byEst[est]?.[g];
+      const d=byEst[est]?.[_normGuia(g)]; // clave normalizada
       if(d){estOk+=d.ok;estTotal+=d.total; cells+=pctCell(d.ok,d.total);}
       else cells+=`<td style="text-align:center;color:var(--text3)">—</td>`;
     }
