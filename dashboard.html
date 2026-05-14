@@ -845,6 +845,26 @@ function _normGuia(g){
   return(g||'').toLowerCase().replace(/_/g,' ').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
 }
 
+// Normalización fuerte para deduplicar EVIDENCIAS en el modal del aprendiz.
+// Más agresiva que _normGuia porque los nombres de evidencia llegan con formatos muy
+// distintos: "LINEA_TIEMPO_PROFESIONAL.png" vs "Línea de tiempo Profesional".
+// Pasos:  lowercase → quitar extensión → quitar tildes →
+//         separadores → quitar puntuación → colapsar espacios →
+//         filtrar stopwords y palabras de 1 char.
+function _normEvidencia(s){
+  const STOP=new Set(['de','del','la','el','los','las','un','una','y','o','a','en','con','por','al','que','se','su','sus','lo']);
+  return(s||'')
+    .toLowerCase()
+    .replace(/\.[a-z0-9]{1,5}(\s|$)/gi,' ')          // quitar extensiones (.png, .pdf…)
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')  // quitar tildes
+    .replace(/[_\-]/g,' ')                            // guiones/underscores → espacio
+    .replace(/[^a-z0-9\s]/g,'')                       // quitar puntuación restante
+    .replace(/\s+/g,' ').trim()
+    .split(' ')
+    .filter(w=>w.length>1&&!STOP.has(w))              // quitar stopwords y letras sueltas
+    .join(' ');
+}
+
 // Lista de guías deduplicada y ordenada a partir de un array de rows.
 // Cuando dos valores BD tienen la misma clave canónica, conserva el mejor formateado
 // (aquel con más caracteres en minúsculas o acentuados, típicamente el más reciente).
@@ -1126,33 +1146,34 @@ function abrirAprendiz(nombre){
       const _normG  = _normGuia(guia);
       const rgGuia  = rows.filter(r => _normGuia(r.guia) === _normG);
 
-      // Deduplicar evidencias por clave normalizada — mismo patrón que _guiasUnicas.
-      // Usa for..of en lugar de Object.fromEntries (Safari < 12.1 no lo soporta).
+      // Deduplicar evidencias con _normEvidencia (más fuerte que _normGuia):
+      // colapsa nombres equivalentes como "LINEA TIEMPO PROFESIONAL" ↔ "Línea de tiempo Profesional"
+      // eliminando tildes, puntuación y stopwords antes de comparar.
+      // La clave canónica solo se usa para agrupar — NUNCA como label visible.
       const _evsMap = new Map();
       for(const r of rgGuia){
-        if(r.evidencia == null) continue; // omitir filas sin evidencia
-        const k    = _normGuia(r.evidencia);
+        if(r.evidencia == null) continue;
+        const k = _normEvidencia(r.evidencia);   // clave canónica fuerte
+        if(!k) continue;                          // skip si queda vacía tras normalizar
         const prev = _evsMap.get(k);
         if(!prev){ _evsMap.set(k,{label:r.evidencia,entregado:!!r.entregado}); continue; }
-        // _sc: \u escapes ASCII-safe — literales áéíóúñ se corrompen al copiar/desplegar
+        // Conservar el label con más minúsculas/acentos (versión mejor formateada)
         const _sc = s => (s.match(/[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1]/g)||[]).length;
         _evsMap.set(k,{
           label    : _sc(r.evidencia) > _sc(prev.label) ? r.evidencia : prev.label,
-          entregado: prev.entregado || !!r.entregado,
+          entregado: prev.entregado || !!r.entregado,  // OR: entregada si alguna versión lo está
         });
       }
 
-      const evs = {};
-      for(const {label,entregado} of _evsMap.values()){ evs[label] = entregado; }
-
-      const ok  = Object.values(evs).filter(Boolean).length;
-      const tot = Object.keys(evs).length;
+      // Render desde los valores del Map — la clave canónica nunca aparece en el DOM
+      const _evsArr = [..._evsMap.values()].sort((a,b) => a.label.localeCompare(b.label));
+      const ok  = _evsArr.filter(e => e.entregado).length;
+      const tot = _evsArr.length;
       const pct = tot > 0 ? Math.round(ok/tot*100) : 0;
       const cls = pct>=80 ? 'var(--green)' : pct>=50 ? 'var(--amber)' : 'var(--red)';
 
-      const chips = Object.entries(evs)
-        .sort(([a],[b]) => a.localeCompare(b))
-        .map(([ev,v]) => `<span class="ev-pill ${v?'ok':'no'}">${v?'✓':'✗'} ${ev}</span>`)
+      const chips = _evsArr
+        .map(({label,entregado}) => `<span class="ev-pill ${entregado?'ok':'no'}">${entregado?'✓':'✗'} ${label}</span>`)
         .join('');
 
       html += `<div class="guia-detalle">
