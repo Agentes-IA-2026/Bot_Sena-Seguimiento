@@ -923,7 +923,9 @@ function renderTablaEvidencias(rows){
     const fc=d.pct>=80?'green':d.pct>=50?'amber':'red';
     const sem=getSemaforo(d.pct);
     const evs=evidencias.map(e=>{const v=d.evs[e];if(v===undefined)return`<td class="ev-cell ev-nd">—</td>`;return`<td class="ev-cell ${v?'ev-ok':'ev-no'}">${v?'✓':'✗'}</td>`;}).join('');
-    return`<tr onclick="abrirAprendiz('${d.nombre.replace(/'/g,"\\'")}')">
+    // FIX: usar data-nombre para evitar inyección HTML cuando el nombre contiene comillas dobles
+    const safeNombre=d.nombre.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return`<tr data-nombre="${safeNombre}" onclick="abrirAprendiz(this.dataset.nombre)">
       <td style="color:var(--text3);font-family:var(--mono);font-size:0.62rem">${String(i+1).padStart(2,'0')}</td>
       <td style="font-weight:500;white-space:nowrap;font-size:0.82rem">${d.nombre}</td>
       ${evs}
@@ -1073,62 +1075,107 @@ function renderComparativo(){
 // MODAL APRENDIZ INDIVIDUAL
 // ════════════════════════════════════════════════
 function abrirAprendiz(nombre){
-  if(!fichaActual||!FICHAS[fichaActual])return;
-  const rows=FICHAS[fichaActual].data.filter(r=>r.estudiante===nombre);
-  const guias=_guiasUnicas(rows); // deduplicado por clave canónica
+  // FIX: cachear refs al inicio — si alguno no existe el error aparece de inmediato
+  const modal    = document.getElementById('aprendiz-modal');
+  const apBody   = document.getElementById('ap-body');
+  const apNombre = document.getElementById('ap-nombre');
+  const apMeta   = document.getElementById('ap-meta');
+  if(!modal||!apBody||!apNombre||!apMeta){
+    console.error('[abrirAprendiz] Elementos del modal no encontrados en el DOM');
+    return;
+  }
 
-  const ap=agruparPorAprendizGeneral(FICHAS[fichaActual].data);
-  const evsTodas=Object.values(ap[nombre]||{});
-  const okTotal=evsTodas.filter(Boolean).length;
-  const totTotal=evsTodas.length;
-  const pctTotal=totTotal>0?Math.round(okTotal/totTotal*100):0;
-  const sem=getSemaforo(pctTotal);
+  // FIX: try/catch completo — garantiza que el modal SIEMPRE abre,
+  // incluso si hay un error de datos; el catch muestra el mensaje de error dentro del panel.
+  try{
+    if(!fichaActual||!FICHAS[fichaActual])throw new Error('Sin ficha activa o datos no cargados');
 
-  document.getElementById('ap-nombre').textContent=nombre;
-  document.getElementById('ap-meta').textContent=`Ficha ${fichaActual} · ${okTotal}/${totTotal} evidencias totales · ${pctTotal}% cumplimiento`;
+    const rows=FICHAS[fichaActual].data.filter(r=>r.estudiante===nombre);
+    const guias=_guiasUnicas(rows);
 
-  let html=`<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
-    <div class="prog-wrap" style="flex:1"><div class="prog-bar" style="height:6px"><div class="prog-fill ${pctTotal>=80?'green':pctTotal>=50?'amber':'red'}" style="width:${pctTotal}%"></div></div><div class="prog-label" style="font-size:0.8rem">${pctTotal}%</div></div>
-    <span class="${sem.cls}">${sem.label}</span>
-  </div>`;
+    const ap=agruparPorAprendizGeneral(FICHAS[fichaActual].data);
+    const evsTodas=Object.values(ap[nombre]||{});
+    const okTotal=evsTodas.filter(Boolean).length;
+    const totTotal=evsTodas.length;
+    const pctTotal=totTotal>0?Math.round(okTotal/totTotal*100):0;
+    const sem=getSemaforo(pctTotal);
 
-  for(const guia of guias){
-    const _normG=_normGuia(guia);
-    const rgGuia=rows.filter(r=>_normGuia(r.guia)===_normG);
-    // Deduplicar evidencias por clave normalizada (mismo patrón que _guiasUnicas).
-    // Evita chips dobles cuando la misma evidencia tiene dos formatos en la BD
-    // (ej. "EVIDENCIA_01_FOTO" y "Evidencia 01 Foto").
-    // Preferencia: label con más minúsculas/acentos; entregado = OR entre versiones.
-    const _evsMap=new Map(); // normKey → {label, entregado}
-    for(const r of rgGuia){
-      const k=_normGuia(r.evidencia);
-      const prev=_evsMap.get(k);
-      if(!prev){_evsMap.set(k,{label:r.evidencia,entregado:!!r.entregado});continue;}
-      const _sc=s=>(s.match(/[a-záéíóúñ]/g)||[]).length;
-      _evsMap.set(k,{
-        label:_sc(r.evidencia)>_sc(prev.label)?r.evidencia:prev.label,
-        entregado:prev.entregado||!!r.entregado,
-      });
+    apNombre.textContent=nombre;
+    apMeta.textContent=`Ficha ${fichaActual} · ${okTotal}/${totTotal} evidencias totales · ${pctTotal}% cumplimiento`;
+
+    let html=`<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <div class="prog-wrap" style="flex:1"><div class="prog-bar" style="height:6px"><div class="prog-fill ${pctTotal>=80?'green':pctTotal>=50?'amber':'red'}" style="width:${pctTotal}%"></div></div><div class="prog-label" style="font-size:0.8rem">${pctTotal}%</div></div>
+      <span class="${sem.cls}">${sem.label}</span>
+    </div>`;
+
+    if(!guias.length){
+      // FIX: caso sin guías auditadas — mensaje en lugar de sección vacía
+      html+='<p style="color:var(--text3);font-size:0.8rem;padding:4px 0">Sin guías auditadas para este aprendiz.</p>';
     }
-    const evs=Object.fromEntries([..._evsMap.values()].map(({label,entregado})=>[label,entregado]));
-    const ok=Object.values(evs).filter(Boolean).length;
-    const tot=Object.keys(evs).length;
-    const pct=tot>0?Math.round(ok/tot*100):0;
-    const cls=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
 
-    html+=`<div class="guia-detalle">
-      <div class="guia-detalle-header">
-        <div class="guia-detalle-nombre">${guiaLabel(guia)}</div>
-        <div class="guia-detalle-pct" style="color:${cls}">${ok}/${tot} · ${pct}%</div>
-      </div>
-      <div class="guia-detalle-evs">
-        ${Object.entries(evs).sort().map(([ev,v])=>`<span class="ev-pill ${v?'ok':'no'}">${v?'✓':'✗'} ${ev}</span>`).join('')}
-      </div>
+    for(const guia of guias){
+      const _normG=_normGuia(guia);
+      const rgGuia=rows.filter(r=>_normGuia(r.guia)===_normG);
+
+      // Deduplicar evidencias por clave normalizada — mismo patrón que _guiasUnicas.
+      // evs es un objeto plano {label: entregado(bool)} construido con for..of
+      // para máxima compatibilidad (sin Object.fromEntries que falla en Safari < 12.1).
+      const _evsMap=new Map();
+      for(const r of rgGuia){
+        // FIX: omitir filas sin evidencia (r.evidencia null/undefined evita key vacía)
+        if(r.evidencia==null)continue;
+        const k=_normGuia(r.evidencia);
+        const prev=_evsMap.get(k);
+        if(!prev){_evsMap.set(k,{label:r.evidencia,entregado:!!r.entregado});continue;}
+        // FIX: _sc usa \u escapes ASCII-safe (los literales áéíóúñ pueden corromperse en deploy)
+        const _sc=s=>(s.match(/[a-záéíóúñ]/g)||[]).length;
+        _evsMap.set(k,{
+          label:_sc(r.evidencia)>_sc(prev.label)?r.evidencia:prev.label,
+          entregado:prev.entregado||!!r.entregado,
+        });
+      }
+
+      // FIX: construir objeto plano con for..of en vez de Object.fromEntries+map
+      // Evita el crash en Safari < 12.1 donde Object.fromEntries no existe.
+      const evs={};
+      for(const{label,entregado}of _evsMap.values()){evs[label]=entregado;}
+
+      const ok=Object.values(evs).filter(Boolean).length;
+      const tot=Object.keys(evs).length;
+      const pct=tot>0?Math.round(ok/tot*100):0;
+      const cls=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+
+      // FIX: sort con comparador explícito — evita comparaciones [key,bool] ambiguas
+      const chips=Object.entries(evs)
+        .sort(([a],[b])=>a.localeCompare(b))
+        .map(([ev,v])=>`<span class="ev-pill ${v?'ok':'no'}">${v?'✓':'✗'} ${ev}</span>`)
+        .join('');
+
+      html+=`<div class="guia-detalle">
+        <div class="guia-detalle-header">
+          <div class="guia-detalle-nombre">${guiaLabel(guia)}</div>
+          <div class="guia-detalle-pct" style="color:${cls}">${ok}/${tot} · ${pct}%</div>
+        </div>
+        <div class="guia-detalle-evs">${chips||'<span style="color:var(--text3);font-size:0.75rem">Sin evidencias registradas</span>'}</div>
+      </div>`;
+    }
+
+    apBody.innerHTML=html;
+
+  }catch(err){
+    // FIX: capturar cualquier error y mostrarlo dentro del modal (no en alert ni consola perdida)
+    console.error('[abrirAprendiz] Error al renderizar detalle de "'+nombre+'":', err);
+    apNombre.textContent=nombre;
+    apMeta.textContent='Error al cargar el detalle';
+    apBody.innerHTML=`<div class="empty-state">
+      <div class="icon" style="font-size:2rem">⚠️</div>
+      <p>No se pudo cargar el detalle del aprendiz.</p>
+      <p style="font-size:0.7rem;color:var(--text3);margin-top:6px;font-family:var(--mono)">${err.message||String(err)}</p>
     </div>`;
   }
 
-  document.getElementById('ap-body').innerHTML=html;
-  document.getElementById('aprendiz-modal').classList.add('open');
+  // FIX: abrir modal FUERA del try/catch — siempre abre, tanto en éxito como en error
+  modal.classList.add('open');
 }
 
 function cerrarAprendiz(){document.getElementById('aprendiz-modal').classList.remove('open');}
