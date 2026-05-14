@@ -1095,8 +1095,22 @@ function abrirAprendiz(nombre){
   for(const guia of guias){
     const _normG=_normGuia(guia);
     const rgGuia=rows.filter(r=>_normGuia(r.guia)===_normG);
-    const evs={};
-    for(const r of rgGuia)evs[r.evidencia]=r.entregado;
+    // Deduplicar evidencias por clave normalizada (mismo patrón que _guiasUnicas).
+    // Evita chips dobles cuando la misma evidencia tiene dos formatos en la BD
+    // (ej. "EVIDENCIA_01_FOTO" y "Evidencia 01 Foto").
+    // Preferencia: label con más minúsculas/acentos; entregado = OR entre versiones.
+    const _evsMap=new Map(); // normKey → {label, entregado}
+    for(const r of rgGuia){
+      const k=_normGuia(r.evidencia);
+      const prev=_evsMap.get(k);
+      if(!prev){_evsMap.set(k,{label:r.evidencia,entregado:!!r.entregado});continue;}
+      const _sc=s=>(s.match(/[a-záéíóúñ]/g)||[]).length;
+      _evsMap.set(k,{
+        label:_sc(r.evidencia)>_sc(prev.label)?r.evidencia:prev.label,
+        entregado:prev.entregado||!!r.entregado,
+      });
+    }
+    const evs=Object.fromEntries([..._evsMap.values()].map(({label,entregado})=>[label,entregado]));
     const ok=Object.values(evs).filter(Boolean).length;
     const tot=Object.keys(evs).length;
     const pct=tot>0?Math.round(ok/tot*100):0;
