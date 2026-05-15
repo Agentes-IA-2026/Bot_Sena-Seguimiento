@@ -19,6 +19,9 @@ supabase
 # HTTP para descargar PDFs desde Supabase Storage
 httpx
 
+# CA bundle actualizado para SSL (requerido en Windows con proxies corporativos)
+certifi
+
 # API web (endpoints para el dashboard)
 fastapi
 uvicorn

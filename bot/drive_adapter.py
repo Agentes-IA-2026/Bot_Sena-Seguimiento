@@ -5,7 +5,9 @@ Funciona con OAuth2 por docente (cada docente autoriza su propia cuenta).
 Mantiene toda la lógica de comparación flexible del código original.
 """
 
+import os
 import re
+import unicodedata
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
@@ -13,19 +15,17 @@ from google.oauth2.credentials import Credentials
 # ── NORMALIZACIÓN ─────────────────────────────────────────────────────────────
 
 def _normalizar(texto: str) -> str:
-    texto = texto.lower()
-    reemplazos = {
-        'á':'a','é':'e','í':'i','ó':'o','ú':'u',
-        'ä':'a','ë':'e','ï':'i','ö':'o','ü':'u',
-        'à':'a','è':'e','ì':'i','ò':'o','ù':'u',
-        'ñ':'n',
-    }
-    for origen, destino in reemplazos.items():
-        texto = texto.replace(origen, destino)
-    texto = re.sub(r'\.(pdf|png|jpg|jpeg|xlsx|xls|pptx|ppt|docx|doc|mp4)(\.|$)', ' ', texto)
-    texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
-    texto = re.sub(r'\s+', ' ', texto).strip()
-    return texto
+    """
+    Normalización para matching de nombres de archivo en Drive.
+    Usa NFD + strip combining marks — más robusto que una tabla manual de
+    tildes, y alineado con auditor.normalizar() y _norm_guia_py/_norm_evidencia_py.
+    """
+    t = texto.lower()
+    t = unicodedata.normalize('NFD', t)
+    t = ''.join(c for c in t if unicodedata.category(c) != 'Mn')
+    t = re.sub(r'\.(pdf|png|jpg|jpeg|xlsx|xls|pptx|ppt|docx|doc|mp4)(\.|$)', ' ', t)
+    t = re.sub(r'[^a-z0-9\s]', ' ', t)
+    return re.sub(r'\s+', ' ', t).strip()
 
 
 def _palabras_clave(texto_normalizado: str) -> set:
@@ -84,32 +84,83 @@ def conectar(token_dict: dict):
 
 # ── LISTAR ARCHIVOS ───────────────────────────────────────────────────────────
 
-def _listar_archivos_recursivo(service, folder_id: str) -> list:
-    nombres = []
+def _listar_con_info(
+    service,
+    folder_id: str,
+    carpeta_padre: str = "",
+    folder_path: str = "",
+) -> list[dict]:
+    """
+    Lista recursivamente todos los archivos de una carpeta Drive.
+    Cada elemento: nombre, extension, mime_type, carpeta_padre, folder_path, drive_file_id
+
+    Notas:
+    - supportsAllDrives + includeItemsFromAllDrives para Shared Drives.
+    - Google Docs/Sheets/Slides no tienen extensión: extension="" y mime_type indica su tipo.
+      El campo mime_type permite que _tipo_ok los trate correctamente en auditor.py.
+    """
+    resultado = []
     try:
         page_token = None
         while True:
-            results = service.files().list(
+            resp = service.files().list(
                 q=f"'{folder_id}' in parents and trashed = false",
                 fields="nextPageToken, files(id, name, mimeType)",
-                pageSize=100,
-                pageToken=page_token
+                pageSize=200,
+                pageToken=page_token,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
             ).execute()
 
-            for item in results.get('files', []):
-                if item['mimeType'] == 'application/vnd.google-apps.folder':
-                    nombres.extend(_listar_archivos_recursivo(service, item['id']))
+            for item in resp.get("files", []):
+                nombre    = item["name"]
+                mime_type = item["mimeType"]
+                if mime_type == "application/vnd.google-apps.folder":
+                    sub_path = f"{folder_path}/{nombre}".lstrip("/")
+                    resultado.extend(
+                        _listar_con_info(service, item["id"], nombre, sub_path)
+                    )
                 else:
-                    nombres.append(item['name'])
+                    _, ext = os.path.splitext(nombre)
+                    resultado.append({
+                        "nombre"        : nombre,
+                        "extension"     : ext.lower(),
+                        "mime_type"     : mime_type,
+                        "carpeta_padre" : carpeta_padre,
+                        "folder_path"   : folder_path,
+                        "drive_file_id" : item["id"],
+                    })
 
-            page_token = results.get('nextPageToken')
+            page_token = resp.get("nextPageToken")
             if not page_token:
                 break
 
     except Exception as e:
         print(f"Error al listar carpeta {folder_id}: {e}")
 
-    return nombres
+    return resultado
+
+
+def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
+    """Wrapper de compatibilidad con el código existente — retorna solo nombres."""
+    return [a["nombre"] for a in _listar_con_info(service, folder_id)]
+
+
+def listar_archivos_con_info(token_dict: dict, folder_id: str) -> list[dict]:
+    """
+    Versión pública OAuth2 de _listar_con_info.
+    Usar desde bot/core.py o cualquier módulo con token OAuth2.
+    """
+    service = conectar(token_dict)
+    return _listar_con_info(service, folder_id)
+
+
+def listar_archivos_con_info_service(service, folder_id: str) -> list[dict]:
+    """
+    Versión pública para service account.
+    Usar desde main.py donde el service ya está conectado con cuenta de servicio.
+    """
+    return _listar_con_info(service, folder_id)
 
 
 # ── VERIFICACIÓN PRINCIPAL ────────────────────────────────────────────────────

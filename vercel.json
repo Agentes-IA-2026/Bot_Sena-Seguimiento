@@ -1,6 +1,7 @@
 {
   "version": 2,
   "routes": [
+    { "src": "/panel", "dest": "/dashboard.html" },
     { "src": "/dashboard.html", "dest": "/dashboard.html" },
     { "src": "/login.html", "dest": "/login.html" },
     { "src": "/", "dest": "/index.html" }

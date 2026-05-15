@@ -2,4 +2,12 @@ assets/credenciales.json
 assets/listado_aprendices.xlsx
 logs/
 __pycache__/
+*.pyc
 **/node_modules/
+# Excel lock files (creados cuando el archivo está abierto)
+~$*
+# Claude Code internos
+.claude/
+# Scripts de fix one-shot (no hacen falta en producción)
+_fix_*.py
+SSL_FIX.md
