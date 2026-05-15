@@ -9,19 +9,20 @@ Un solo código — comportamiento diferente por docente.
 
 import os
 from datetime import datetime
-from supabase import create_client, Client
 from bot import drive_adapter, classroom_adapter
 from bot.document_analyzer import extraer_desde_bytes, extraer_desde_lista_manual
+
+# Fase 2: motor de auditoría enriquecida
+from bot.auditor import MotorAuditoria, EstadoAuditoria, resumen as resumen_auditoria
+from bot.drive_adapter import listar_archivos_con_info
+from sincronizador_tabla import cargar_actividades
+from supabase_client import get_supabase
 
 
 # ── CONEXIÓN SUPABASE ─────────────────────────────────────────────────────────
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-
-def _supabase() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+def _supabase():
+    return get_supabase()
 
 
 # ── CARGAR CONFIGURACIÓN DEL DOCENTE ─────────────────────────────────────────
@@ -95,8 +96,9 @@ def obtener_evidencias(guia: dict) -> list:
     # Intento 1: PDF en Supabase Storage
     if guia.get("pdf_url"):
         try:
-            import httpx
-            respuesta = httpx.get(guia["pdf_url"], timeout=15)
+            from ssl_config import get_httpx_client
+            with get_httpx_client(timeout=15) as http:
+                respuesta = http.get(guia["pdf_url"])
             if respuesta.status_code == 200:
                 evidencias = extraer_desde_bytes(respuesta.content)
                 if evidencias:
@@ -110,6 +112,114 @@ def obtener_evidencias(guia: dict) -> list:
 
     # Intento 3: Lista manual hardcodeada en código
     return extraer_desde_lista_manual(guia.get("nombre", ""))
+
+
+# ── OBTENER ACTIVIDADES (FASE 2) ──────────────────────────────────────────────
+
+def obtener_actividades(guia: dict, programa: str = "") -> list[dict]:
+    """
+    Retorna actividades parametrizadas desde Supabase para una guía.
+    Fallback: convierte la lista plana de obtener_evidencias() al formato dict.
+
+    El campo guia["nombre"] se usa como filtro parcial (tolerante a mayúsculas).
+    Si el programa es conocido, filtra por él también para evitar ambigüedades.
+    """
+    guia_nombre = guia.get("nombre", "")
+    actividades = cargar_actividades(programa=programa or None, guia=guia_nombre)
+    if actividades:
+        return actividades
+
+    # Fallback: convertir evidencias antiguas a formato dict mínimo
+    evidencias = obtener_evidencias(guia)
+    return [
+        {
+            "actividad_id"        : str(i),
+            "guia"                : guia_nombre,
+            "programa"            : programa,
+            "actividad_resumen"   : ev,
+            "nombre_esperado"     : ev,
+            "variantes_permitidas": [],
+            "tipo_archivo"        : "CUALQUIER_FORMATO",
+            "obligatoria"         : True,
+            "carpeta_drive"       : None,
+            "regla_validacion"    : None,
+        }
+        for i, ev in enumerate(evidencias)
+    ]
+
+
+# ── VERIFICAR UN ESTUDIANTE (FASE 2) ──────────────────────────────────────────
+
+def verificar_estudiante_v2(
+    config: dict,
+    estudiante: dict,
+    guia: dict,
+    actividades: list[dict],
+    todas_actividades: list[dict] | None = None,
+) -> dict:
+    """
+    Motor enriquecido: usa MotorAuditoria y retorna estados detallados.
+    Solo soporta fuente 'drive' (Classroom no tiene metadatos de carpeta/nombre).
+
+    todas_actividades — universo completo para detectar EVIDENCIA_CRUZADA.
+    Si se omite, las actividades sin match pasan directo a FALTA.
+
+    Retorna el mismo shape que verificar_estudiante() más el campo resultados_v2.
+    """
+    token     = config.get("token_google", {})
+    folder_id = drive_adapter.extraer_id_carpeta(estudiante.get("link_drive", ""))
+
+    if not folder_id:
+        total = len(actividades)
+        return {
+            "estudiante"   : estudiante.get("nombre", ""),
+            "guia"         : guia.get("nombre", ""),
+            "evidencias"   : {a.get("nombre_esperado", ""): False for a in actividades},
+            "resultados_v2": [],
+            "entregadas"   : 0,
+            "total"        : total,
+            "porcentaje"   : 0,
+            "fuente"       : "drive",
+            "error"        : "sin_link",
+        }
+
+    try:
+        archivos    = listar_archivos_con_info(token, folder_id)
+        resultados  = MotorAuditoria(actividades, archivos, todas_actividades).auditar()
+        stats       = resumen_auditoria(resultados)
+
+        # Mapa bool para compatibilidad con _generar_reporte_excel y _guardar_en_supabase
+        # es_entregada() devuelve True también para FORMATO_INCORRECTO, NOMBRE_DIFERENTE, etc.
+        evidencias_bool = {
+            r["nombre_esperado"]: es_entregada(r)
+            for r in resultados
+        }
+
+        return {
+            "estudiante"   : estudiante.get("nombre", ""),
+            "guia"         : guia.get("nombre", ""),
+            "evidencias"   : evidencias_bool,
+            "resultados_v2": resultados,
+            "entregadas"   : stats["ok"],
+            "total"        : stats["total"],
+            "porcentaje"   : stats["porcentaje"],
+            "fuente"       : "drive",
+        }
+
+    except Exception as e:
+        print(f"Error verificar_v2 {estudiante.get('nombre', '')}: {e}")
+        total = len(actividades)
+        return {
+            "estudiante"   : estudiante.get("nombre", ""),
+            "guia"         : guia.get("nombre", ""),
+            "evidencias"   : {a.get("nombre_esperado", ""): False for a in actividades},
+            "resultados_v2": [],
+            "entregadas"   : 0,
+            "total"        : total,
+            "porcentaje"   : 0,
+            "fuente"       : "drive",
+            "error"        : str(e),
+        }
 
 
 # ── VERIFICAR UN ESTUDIANTE ───────────────────────────────────────────────────
@@ -227,15 +337,35 @@ def auditar(docente_id: str, guia_id: str = None,
     total_e      = 0
     total_ok     = 0
 
+    fuente   = config.get("fuente", "drive")
+    programa = config.get("programa", "")
+
+    # Cargar universo completo una sola vez (necesario para EVIDENCIA_CRUZADA)
+    todas_actividades = cargar_actividades() if fuente == "drive" else []
+
     for guia in guias:
-        evidencias = obtener_evidencias(guia)
-        if not evidencias:
-            continue
+        # Fase 2: intentar actividades parametrizadas primero
+        if fuente == "drive":
+            actividades = obtener_actividades(guia, programa)
+            usar_v2     = bool(actividades)
+        else:
+            actividades = []
+            usar_v2     = False
+
+        if not usar_v2:
+            evidencias = obtener_evidencias(guia)
+            if not evidencias:
+                continue
 
         for estudiante in estudiantes:
-            resultado = verificar_estudiante(
-                config, estudiante, guia, evidencias
-            )
+            if usar_v2:
+                resultado = verificar_estudiante_v2(
+                    config, estudiante, guia, actividades, todas_actividades
+                )
+            else:
+                resultado = verificar_estudiante(
+                    config, estudiante, guia, evidencias
+                )
             resultados.append(resultado)
 
             total_e  += resultado["total"]
