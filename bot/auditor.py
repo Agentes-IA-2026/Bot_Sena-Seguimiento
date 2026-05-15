@@ -350,6 +350,17 @@ class MotorAuditoria:
         patron_norm  = _norm(nombre_esp)
         patron_toks  = _tokens(patron_norm)
 
+        # ── Debug dirigido: evidencia "Mi programa de Formación" ─────────────
+        _dbg = any(kw in patron_norm for kw in ('programa', 'formacion'))
+        if _dbg:
+            print(
+                f"\nDEBUG_MI_PROGRAMA"
+                f"  raw={repr(nombre_esp)}"
+                f"  norm={repr(patron_norm)}"
+                f"  toks={sorted(patron_toks)}"
+                f"  variantes={variantes}"
+            )
+
         if self.debug:
             print(f"\n         🔬 [{act_id}] patron='{fuente_tag}{nombre_esp[:55]}'")
             print(f"              norm='{patron_norm[:55]}'  tokens={sorted(patron_toks)}")
@@ -359,6 +370,19 @@ class MotorAuditoria:
         candidatos: list[tuple[int, str, dict]] = []
         for archivo in self.archivos:
             score, patron = _mejor_score(nombre_esp, variantes, archivo["nombre"])
+            _dn = _norm(archivo["nombre"])
+            _dbg_drive = any(kw in _dn for kw in ('programa', 'formacion'))
+            # Log si el PATRÓN buscado es la evidencia objetivo, O si el ARCHIVO de
+            # Drive contiene las palabras clave — cubre el caso donde nombre_esperado
+            # en actividades_parametrizadas tiene otro nombre pero el archivo coincide.
+            if _dbg or _dbg_drive:
+                print(
+                    f"DEBUG_DRIVE_MI_PROGRAMA"
+                    f"  score={score:3d}"
+                    f"  patron_norm={repr(patron_norm)}"
+                    f"  raw_drive={repr(archivo['nombre'])}"
+                    f"  norm_drive={repr(_dn)}"
+                )
             if self.debug and score > 0:
                 drive_norm = _norm(archivo["nombre"])
                 drive_toks = _tokens(drive_norm)

@@ -753,29 +753,20 @@ def _resolver_archivos_para_guia(
     nombre_guia: str,
 ) -> list[dict]:
     """
-    Devuelve el subconjunto de archivos Drive relevantes para una guía.
+    Devuelve los archivos Drive que deben pasar al MotorAuditoria para esta guía.
 
-    Si SUBCARPETA_GUIA define una subcarpeta para esta guía (comparación normalizada),
-    filtra a los archivos cuyo folder_path o carpeta_padre la contiene.
-    Si la subcarpeta no existe entre los archivos, devuelve todos (fallback).
-    Guías sin entrada en SUBCARPETA_GUIA reciben siempre la lista completa.
+    SIEMPRE devuelve la lista completa.
+    La validación de subcarpeta se delega a MotorAuditoria._evaluar() vía el campo
+    carpeta_drive de cada actividad en actividades_parametrizadas: si el archivo
+    está en la carpeta incorrecta, el motor devuelve CARPETA_INCORRECTA (que
+    sí cuenta como entregado), no FALTA.
+
+    El pre-filtro por SUBCARPETA_GUIA se eliminó porque ocultaba archivos válidos
+    guardados en la raíz de la carpeta del aprendiz (p.ej. "Mi programa de Formación"
+    en la raíz cuando GUIA_01 esperaba la subcarpeta "analisis"), produciendo FALTA
+    falsos aunque el archivo existiera y el score fuera >= 75.
     """
-    clave = next(
-        (k for k in SUBCARPETA_GUIA if k in nombre_guia.upper()),
-        None,
-    )
-    if not clave:
-        return archivos
-
-    sub_norm = _normalizar(SUBCARPETA_GUIA[clave])   # ej. "analisis"
-    filtrados = [
-        a for a in archivos
-        if sub_norm in _normalizar(
-            a.get("folder_path", "") + " " + a.get("carpeta_padre", "")
-        )
-    ]
-    # Si la subcarpeta no existe en Drive, auditar con todos los archivos
-    return filtrados if filtrados else archivos
+    return archivos
 
 
 def _guardar_auditoria_enriquecida(

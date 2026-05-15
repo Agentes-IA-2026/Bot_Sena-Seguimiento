@@ -25,7 +25,14 @@ def _normalizar(texto: str) -> str:
     t = ''.join(c for c in t if unicodedata.category(c) != 'Mn')
     t = re.sub(r'\.(pdf|png|jpg|jpeg|xlsx|xls|pptx|ppt|docx|doc|mp4)(\.|$)', ' ', t)
     t = re.sub(r'[^a-z0-9\s]', ' ', t)
-    return re.sub(r'\s+', ' ', t).strip()
+    t = re.sub(r'\s+', ' ', t).strip()
+    if 'programa' in t or 'formacion' in t:
+        print(
+            f"DEBUG_DRIVE_ADAPTER_MI_PROGRAMA"
+            f"  raw={repr(texto)}"
+            f"  norm={repr(t)}"
+        )
+    return t
 
 
 def _palabras_clave(texto_normalizado: str) -> set:
