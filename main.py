@@ -1137,11 +1137,27 @@ def auditar_ficha(ruta_excel: str, service):
 
                     # Bool para _guardar_en_supabase (tabla verificaciones, dashboard).
                     # Formato incorrecto sigue siendo ENTREGADO — el tipo es solo advertencia.
-                    reporte_bool = {
-                        r["nombre_esperado"]: es_entregada(r)
-                        for r in resultados_motor
-                        if r.get("nombre_esperado")
-                    }
+                    # FIX: cuando nombre_esperado es NULL en actividades_parametrizadas,
+                    # el motor usa actividad_resumen como fallback y puede encontrar el
+                    # archivo — pero si solo guardamos r["nombre_esperado"], ese resultado
+                    # se pierde y Supabase conserva el FALTA antiguo.  Usamos la clave
+                    # nombre_esperado OR actividad_resumen para cubrir ese caso.
+                    reporte_bool = {}
+                    for r in resultados_motor:
+                        _clave = r.get("nombre_esperado") or r.get("actividad_resumen") or ""
+                        if not _clave:
+                            continue
+                        _val = es_entregada(r)
+                        reporte_bool[_clave] = _val
+                        # DEBUG_NO_EXISTE_RUTA_INTERACTIVA: traza evidencias con nombre
+                        # esperado vacío que el motor resolvió vía actividad_resumen
+                        if not r.get("nombre_esperado") and r.get("actividad_resumen"):
+                            print(
+                                f"DEBUG_NO_EXISTE_RUTA_INTERACTIVA"
+                                f"  n_esp=NULL  resumen={repr(r['actividad_resumen'])}"
+                                f"  estado={r['estado']}  entregado={_val}"
+                                f"  archivo={repr(r.get('archivo_encontrado'))}"
+                            )
                     # Estado rico por actividad_id para _generar_reporte_excel_v2
                     reporte_v2 = {
                         r["actividad_id"]: r["estado"]
@@ -1389,10 +1405,24 @@ def ejecutar_auditoria(
                 ).auditar()
                 todos_v2.extend(resultados_motor)
 
-                reporte_bool = {
-                    r["nombre_esperado"]: es_entregada(r)
-                    for r in resultados_motor if r.get("nombre_esperado")
-                }
+                # FIX: mismo criterio que la ruta interactiva — usar nombre_esperado
+                # OR actividad_resumen para no perder resultados del motor cuando
+                # nombre_esperado es NULL en actividades_parametrizadas (Ruta B).
+                reporte_bool = {}
+                for r in resultados_motor:
+                    _clave = r.get("nombre_esperado") or r.get("actividad_resumen") or ""
+                    if not _clave:
+                        continue
+                    _val = es_entregada(r)
+                    reporte_bool[_clave] = _val
+                    # DEBUG_NO_EXISTE_RUTA_API: visible en logs de Railway
+                    if not r.get("nombre_esperado") and r.get("actividad_resumen"):
+                        print(
+                            f"DEBUG_NO_EXISTE_RUTA_API"
+                            f"  n_esp=NULL  resumen={repr(r['actividad_resumen'])}"
+                            f"  estado={r['estado']}  entregado={_val}"
+                            f"  archivo={repr(r.get('archivo_encontrado'))}"
+                        )
                 reporte_v2 = {
                     r["actividad_id"]: r["estado"]
                     for r in resultados_motor if r.get("actividad_id")
