@@ -914,19 +914,31 @@ function renderTablaEvidencias(rows){
   }
   const _normActual=_normGuia(guiaActual);
   const rg=rows.filter(r=>_normGuia(r.guia)===_normActual); // tolerante a variaciones de formato
-  const evidencias=[...new Set(rg.map(r=>r.evidencia))].sort();
+
+  // Deduplicar columnas de evidencias por clave canónica (_normEvidencia), igual que el modal.
+  // Resultado: [[normKey, labelBonito], ...] — normKey para comparar, label para mostrar.
+  const _sc=s=>(s.match(/[a-záéíóúñ]/g)||[]).length;
+  const _evMap=new Map(); // normKey → mejor label
+  for(const r of rg){
+    const k=_normEvidencia(r.evidencia);
+    if(!k)continue;
+    const prev=_evMap.get(k);
+    if(!prev||_sc(r.evidencia)>_sc(prev))_evMap.set(k,r.evidencia);
+  }
+  const evidencias=[..._evMap.entries()].sort(([a],[b])=>a.localeCompare(b)); // [[normKey,label],…]
+
   const ap=agruparAprendicesPorGuia(rg);
   document.getElementById('tabla-titulo').textContent=guiaLabel(guiaActual);
   document.getElementById('tabla-sub').textContent=`${Object.keys(ap).length} aprendices · ${evidencias.length} evidencias`;
 
   document.getElementById('tabla-head').innerHTML=`<tr>
     <th>#</th><th>Aprendiz</th>
-    ${evidencias.map(e=>`<th class="ev-th" title="${e}">${e.length>10?e.slice(0,10)+'…':e}</th>`).join('')}
+    ${evidencias.map(([,label])=>`<th class="ev-th" title="${label}">${label.length>10?label.slice(0,10)+'…':label}</th>`).join('')}
     <th>Progreso</th><th>Semáforo</th>
   </tr>`;
 
   let datos=Object.entries(ap).map(([nombre,evs])=>{
-    const ok=evidencias.filter(e=>evs[e]).length;
+    const ok=evidencias.filter(([k])=>evs[k]).length;   // buscar por normKey
     const tot=evidencias.length;
     const pct=tot>0?Math.round(ok/tot*100):0;
     const estado=pct===100?'completo':pct===0?'pendiente':'parcial';
@@ -942,7 +954,7 @@ function renderTablaEvidencias(rows){
   document.getElementById('tabla-body').innerHTML=datos.map((d,i)=>{
     const fc=d.pct>=80?'green':d.pct>=50?'amber':'red';
     const sem=getSemaforo(d.pct);
-    const evs=evidencias.map(e=>{const v=d.evs[e];if(v===undefined)return`<td class="ev-cell ev-nd">—</td>`;return`<td class="ev-cell ${v?'ev-ok':'ev-no'}">${v?'✓':'✗'}</td>`;}).join('');
+    const evs=evidencias.map(([k])=>{const v=d.evs[k];if(v===undefined)return`<td class="ev-cell ev-nd">—</td>`;return`<td class="ev-cell ${v?'ev-ok':'ev-no'}">${v?'✓':'✗'}</td>`;}).join('');
     // FIX: usar data-nombre para evitar inyección HTML cuando el nombre contiene comillas dobles
     const safeNombre=d.nombre.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return`<tr data-nombre="${safeNombre}" onclick="abrirAprendiz(this.dataset.nombre)">
@@ -1252,21 +1264,29 @@ function exportarAlertas(){
 // AGRUPACIONES
 // ════════════════════════════════════════════════
 function agruparPorAprendizGeneral(rows){
-  // { nombre: { guia|||evidencia: bool } }
+  // Clave compuesta: normGuia|||normEvidencia
+  // Ambas partes normalizadas para colapsar variantes de formato del mismo archivo/guía.
+  // OR en entregado: si alguna fila del mismo par lógico está entregada, cuenta como entregada.
   const m={};
   for(const r of rows){
     if(!m[r.estudiante])m[r.estudiante]={};
-    // FIX: _normGuia en la clave evita double-counting cuando misma guía tiene dos formatos
-    m[r.estudiante][_normGuia(r.guia)+'|||'+r.evidencia]=r.entregado;
+    const evNorm=_normEvidencia(r.evidencia);
+    if(!evNorm)continue;
+    const k=_normGuia(r.guia)+'|||'+evNorm;
+    m[r.estudiante][k]=m[r.estudiante][k]||!!r.entregado;
   }
   return m;
 }
 
 function agruparAprendicesPorGuia(rows){
+  // Clave = _normEvidencia(evidencia) para colapsar variantes del mismo archivo.
+  // Si dos filas normalizan a la misma clave, el estado es OR (entregada si alguna lo está).
   const m={};
   for(const r of rows){
     if(!m[r.estudiante])m[r.estudiante]={};
-    m[r.estudiante][r.evidencia]=r.entregado;
+    const k=_normEvidencia(r.evidencia);
+    if(!k)continue;
+    m[r.estudiante][k]=m[r.estudiante][k]||!!r.entregado;
   }
   return m;
 }
