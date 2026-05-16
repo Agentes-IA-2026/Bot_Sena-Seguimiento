@@ -20,7 +20,10 @@ from Core.document_analyzer import extraer_nombres_evidencias_manual, extraer_no
 
 # Fase 2: motor enriquecido
 from bot.auditor import MotorAuditoria, EstadoAuditoria, es_entregada
-from bot.drive_adapter import listar_archivos_con_info_service
+from bot.drive_adapter import (
+    extraer_id_carpeta as extraer_folder_id_drive,
+    listar_archivos_con_info_service,
+)
 from sincronizador_tabla import cargar_actividades
 
 # ── SUPABASE ──────────────────────────────────────────────────────────────────
@@ -65,9 +68,10 @@ FICHA_A_PROGRAMA: dict[str, str] = {
 GUIA_INDUCCION = "GUIA_00_INDUCCION"
 
 # Subcarpetas esperadas por guía dentro del portafolio del aprendiz.
-# Si la subcarpeta existe en Drive, la auditoría de esa guía se limita a ella.
-# Si no existe, se usa el portafolio completo como fallback.
+# Se usan solo para diagnóstico; el motor recibe todos los archivos para evitar
+# falsos FALTA por evidencias válidas ubicadas en otro nivel.
 SUBCARPETA_GUIA: dict[str, str] = {
+    GUIA_INDUCCION: "induccion",
     "GUIA_01": "analisis",
 }
 
@@ -254,21 +258,7 @@ def obtener_guias_por_programa(programa: str) -> list[str]:
 
 
 def _extraer_id_carpeta(link: str) -> str | None:
-    if not link or not isinstance(link, str):
-        return None
-    link = link.strip()
-    for patron in [
-        r'/folders/([a-zA-Z0-9_-]+)',
-        r'/file/d/([a-zA-Z0-9_-]+)',
-        r'[?&]id=([a-zA-Z0-9_-]+)',
-        r'open\?id=([a-zA-Z0-9_-]+)',
-    ]:
-        m = re.search(patron, link)
-        if m:
-            return m.group(1)
-    if "http" not in link and len(link) > 10:
-        return link
-    return None
+    return extraer_folder_id_drive(link)
 
 
 def _leer_evidencias_de_guias(carpeta_guias: str) -> dict:
@@ -769,6 +759,47 @@ def _resolver_archivos_para_guia(
     return archivos
 
 
+def _norm_carpeta_drive(texto: str) -> str:
+    texto = _normalizar(texto or "")
+    texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
+    return re.sub(r'\s+', ' ', texto).strip()
+
+
+def _carpetas_candidatas_para_guia(archivos: list[dict], nombre_guia: str) -> list[str]:
+    esperada = SUBCARPETA_GUIA.get(nombre_guia)
+    if not esperada and nombre_guia == GUIA_INDUCCION:
+        esperada = "induccion"
+    if not esperada:
+        return []
+
+    esperada_norm = _norm_carpeta_drive(esperada)
+    vistas = {
+        a.get("folder_path") or a.get("carpeta_padre") or "(raíz)"
+        for a in archivos
+        if a.get("folder_path") or a.get("carpeta_padre")
+    }
+    candidatas = []
+    for ruta in sorted(vistas):
+        partes = [p for p in re.split(r'[\\/]', ruta) if p]
+        if any(esperada_norm in _norm_carpeta_drive(p) for p in partes):
+            candidatas.append(ruta)
+    return candidatas
+
+
+def _log_carpeta_guia(archivos: list[dict], nombre_guia: str, prefijo: str = "      │") -> None:
+    candidatas = _carpetas_candidatas_para_guia(archivos, nombre_guia)
+    if candidatas:
+        print(f"{prefijo}  Carpeta guía candidata: {', '.join(candidatas[:5])}")
+        if len(candidatas) > 5:
+            print(f"{prefijo}      … y {len(candidatas) - 5} ruta(s) más")
+    else:
+        esperada = SUBCARPETA_GUIA.get(nombre_guia)
+        if esperada:
+            print(f"{prefijo}  Carpeta guía candidata: no encontrada; fallback a portafolio completo")
+        else:
+            print(f"{prefijo}  Carpeta guía candidata: portafolio completo")
+
+
 def _guardar_auditoria_enriquecida(
     resultados_v2: list[dict],
     ficha: str,
@@ -1049,7 +1080,12 @@ def auditar_ficha(ruta_excel: str, service):
         if usar_v2:
             # Listar archivos UNA SOLA VEZ por aprendiz
             try:
-                archivos_drive = listar_archivos_con_info_service(service, folder_id)
+                archivos_drive = listar_archivos_con_info_service(
+                    service,
+                    folder_id,
+                    debug=True,
+                    link_original=str(link),
+                )
                 print(f"      📂 {len(archivos_drive)} archivo(s) en Drive")
             except Exception as e:
                 print(f"      ❌ Error listando Drive: {e}")
@@ -1078,6 +1114,7 @@ def auditar_ficha(ruta_excel: str, service):
                     print(f"\n      ┌─ Guía [{idx_guia}/{n_guias_total}] [{etiqueta_actual}]: {nombre_guia}")
                     print(f"      │  Actividades esperadas : {len(actividades)}")
                     print(f"      │  Archivos en Drive     : {arch_info}")
+                    _log_carpeta_guia(archivos_drive, nombre_guia)
 
                     # ── Pre-flight: diagnóstico de datos en Supabase ─────────
                     vacios = [a for a in actividades if not (a.get("nombre_esperado") or "").strip()]
@@ -1388,7 +1425,12 @@ def ejecutar_auditoria(
             continue
 
         try:
-            archivos_drive = listar_archivos_con_info_service(service, folder_id)
+            archivos_drive = listar_archivos_con_info_service(
+                service,
+                folder_id,
+                debug=True,
+                link_original=str(link),
+            )
         except Exception as e:
             print(f"   ⚠️  Drive error para {nombre}: {e}")
             resultados.append(resultado_ap)
@@ -1400,6 +1442,7 @@ def ejecutar_auditoria(
         for nombre_guia, actividades in _loop:
             try:
                 archivos_guia    = _resolver_archivos_para_guia(archivos_drive, nombre_guia)
+                _log_carpeta_guia(archivos_drive, nombre_guia, prefijo="   │")
                 resultados_motor = MotorAuditoria(
                     actividades, archivos_guia, todas_actividades,
                 ).auditar()

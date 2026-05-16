@@ -142,6 +142,8 @@ def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
     Lista TODOS los archivos dentro de una carpeta y sus subcarpetas.
     Retorna una lista de nombres de archivo originales.
     """
+    folder_mime = 'application/vnd.google-apps.folder'
+    shortcut_mime = 'application/vnd.google-apps.shortcut'
     nombres = []
  
     try:
@@ -149,16 +151,25 @@ def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
         while True:
             results = service.files().list(
                 q=f"'{folder_id}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType)",
-                pageSize=100,
-                pageToken=page_token
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
+                pageSize=1000,
+                pageToken=page_token,
+                corpora="allDrives",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
             ).execute()
  
             items = results.get('files', [])
  
             for item in items:
-                if item['mimeType'] == 'application/vnd.google-apps.folder':
-                    sub = _listar_archivos_recursivo(service, item['id'])
+                is_folder = item['mimeType'] == folder_mime
+                is_folder_shortcut = (
+                    item['mimeType'] == shortcut_mime
+                    and item.get('shortcutDetails', {}).get('targetMimeType') == folder_mime
+                )
+                if is_folder or is_folder_shortcut:
+                    target_id = item.get('shortcutDetails', {}).get('targetId') or item['id']
+                    sub = _listar_archivos_recursivo(service, target_id)
                     nombres.extend(sub)
                 else:
                     nombres.append(item['name'])

@@ -8,6 +8,7 @@ Mantiene toda la lógica de comparación flexible del código original.
 import os
 import re
 import unicodedata
+from urllib.parse import unquote, urlparse, parse_qs
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
@@ -91,11 +92,64 @@ def conectar(token_dict: dict):
 
 # ── LISTAR ARCHIVOS ───────────────────────────────────────────────────────────
 
+FOLDER_MIME = "application/vnd.google-apps.folder"
+SHORTCUT_MIME = "application/vnd.google-apps.shortcut"
+
+
+def _drive_get_metadata(service, file_id: str) -> dict:
+    return service.files().get(
+        fileId=file_id,
+        fields="id, name, mimeType",
+        supportsAllDrives=True,
+    ).execute()
+
+
+def _listar_hijos(service, folder_id: str) -> list[dict]:
+    hijos = []
+    page_token = None
+    while True:
+        resp = service.files().list(
+            q=f"'{folder_id}' in parents and trashed = false",
+            fields=(
+                "nextPageToken, incompleteSearch, "
+                "files(id, name, mimeType, shortcutDetails)"
+            ),
+            pageSize=1000,
+            pageToken=page_token,
+            corpora="allDrives",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        ).execute()
+        if resp.get("incompleteSearch"):
+            print(f"   ⚠️ Drive devolvió búsqueda incompleta para carpeta {folder_id}")
+        hijos.extend(resp.get("files", []))
+        page_token = resp.get("nextPageToken")
+        if not page_token:
+            break
+    return hijos
+
+
+def _es_carpeta_o_shortcut_carpeta(item: dict) -> bool:
+    if item.get("mimeType") == FOLDER_MIME:
+        return True
+    if item.get("mimeType") != SHORTCUT_MIME:
+        return False
+    return item.get("shortcutDetails", {}).get("targetMimeType") == FOLDER_MIME
+
+
+def _id_carpeta_real(item: dict) -> str:
+    if item.get("mimeType") == SHORTCUT_MIME:
+        return item.get("shortcutDetails", {}).get("targetId") or item["id"]
+    return item["id"]
+
+
 def _listar_con_info(
     service,
     folder_id: str,
     carpeta_padre: str = "",
     folder_path: str = "",
+    debug: bool = False,
+    _visitadas: set[str] | None = None,
 ) -> list[dict]:
     """
     Lista recursivamente todos los archivos de una carpeta Drive.
@@ -103,47 +157,63 @@ def _listar_con_info(
 
     Notas:
     - supportsAllDrives + includeItemsFromAllDrives para Shared Drives.
+    - corpora=allDrives evita búsquedas parciales cuando el portafolio está en
+      una unidad compartida.
+    - Entra también a shortcuts que apuntan a carpetas. En Drive el usuario ve
+      el shortcut como carpeta, pero la API lo devuelve con mimeType shortcut.
     - Google Docs/Sheets/Slides no tienen extensión: extension="" y mime_type indica su tipo.
       El campo mime_type permite que _tipo_ok los trate correctamente en auditor.py.
     """
     resultado = []
+    _visitadas = _visitadas or set()
+    if folder_id in _visitadas:
+        if debug:
+            print(f"   ⚠️ Drive: carpeta ya visitada, se omite ciclo: {folder_id}")
+        return resultado
+    _visitadas.add(folder_id)
+
     try:
-        page_token = None
-        while True:
-            resp = service.files().list(
-                q=f"'{folder_id}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType)",
-                pageSize=200,
-                pageToken=page_token,
-                supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-            ).execute()
+        hijos = _listar_hijos(service, folder_id)
+        carpetas = [h for h in hijos if _es_carpeta_o_shortcut_carpeta(h)]
+        if debug:
+            ruta = folder_path or "(raíz)"
+            print(
+                f"   📁 Drive lee /{ruta}: {len(hijos)} hijo(s), "
+                f"{len(carpetas)} subcarpeta(s)"
+            )
+            if carpetas:
+                print("   📁 Subcarpetas: " + ", ".join(c["name"] for c in carpetas[:20]))
 
-            for item in resp.get("files", []):
-                nombre    = item["name"]
-                mime_type = item["mimeType"]
-                if mime_type == "application/vnd.google-apps.folder":
-                    sub_path = f"{folder_path}/{nombre}".lstrip("/")
-                    resultado.extend(
-                        _listar_con_info(service, item["id"], nombre, sub_path)
+        for item in hijos:
+            nombre    = item["name"]
+            mime_type = item["mimeType"]
+            if _es_carpeta_o_shortcut_carpeta(item):
+                sub_path = f"{folder_path}/{nombre}".lstrip("/")
+                resultado.extend(
+                    _listar_con_info(
+                        service,
+                        _id_carpeta_real(item),
+                        nombre,
+                        sub_path,
+                        debug=debug,
+                        _visitadas=_visitadas,
                     )
-                else:
-                    _, ext = os.path.splitext(nombre)
-                    resultado.append({
-                        "nombre"        : nombre,
-                        "extension"     : ext.lower(),
-                        "mime_type"     : mime_type,
-                        "carpeta_padre" : carpeta_padre,
-                        "folder_path"   : folder_path,
-                        "drive_file_id" : item["id"],
-                    })
-
-            page_token = resp.get("nextPageToken")
-            if not page_token:
-                break
+                )
+            else:
+                target = item.get("shortcutDetails", {}) if mime_type == SHORTCUT_MIME else {}
+                _, ext = os.path.splitext(nombre)
+                resultado.append({
+                    "nombre"        : nombre,
+                    "extension"     : ext.lower(),
+                    "mime_type"     : target.get("targetMimeType") or mime_type,
+                    "carpeta_padre" : carpeta_padre,
+                    "folder_path"   : folder_path,
+                    "drive_file_id" : target.get("targetId") or item["id"],
+                })
 
     except Exception as e:
-        print(f"Error al listar carpeta {folder_id}: {e}")
+        ruta = folder_path or "(raíz)"
+        print(f"   ❌ Error al listar carpeta Drive {folder_id} /{ruta}: {e}")
 
     return resultado
 
@@ -162,12 +232,40 @@ def listar_archivos_con_info(token_dict: dict, folder_id: str) -> list[dict]:
     return _listar_con_info(service, folder_id)
 
 
-def listar_archivos_con_info_service(service, folder_id: str) -> list[dict]:
+def listar_archivos_con_info_service(
+    service,
+    folder_id: str,
+    debug: bool = False,
+    link_original: str | None = None,
+) -> list[dict]:
     """
     Versión pública para service account.
     Usar desde main.py donde el service ya está conectado con cuenta de servicio.
     """
-    return _listar_con_info(service, folder_id)
+    meta = None
+    try:
+        meta = _drive_get_metadata(service, folder_id)
+    except Exception as e:
+        raise RuntimeError(
+            f"No se puede leer la carpeta raíz Drive {folder_id}. "
+            "Verifica que el link sea una carpeta y que esté compartida con "
+            f"la cuenta de servicio. Detalle: {e}"
+        ) from e
+
+    if debug:
+        if link_original:
+            print(f"      🔗 URL portafolio : {link_original}")
+        print(f"      🔑 folder_id      : {folder_id}")
+        print(f"      📁 carpeta raíz   : {meta.get('name')} [{meta.get('mimeType')}]")
+    archivos = _listar_con_info(service, folder_id, debug=debug)
+    if debug:
+        print(f"      📄 archivos antes del matching: {len(archivos)}")
+        for archivo in archivos[:30]:
+            ruta = archivo.get("folder_path") or "(raíz)"
+            print(f"      │  {archivo['nombre']}  /{ruta}")
+        if len(archivos) > 30:
+            print(f"      │  ... y {len(archivos) - 30} archivo(s) más")
+    return archivos
 
 
 # ── VERIFICACIÓN PRINCIPAL ────────────────────────────────────────────────────
@@ -209,9 +307,17 @@ def extraer_id_carpeta(link: str) -> str | None:
     """Extrae el ID de Drive de cualquier formato de URL."""
     if not link or not isinstance(link, str):
         return None
-    link = link.strip()
+    link = unquote(link.strip())
+    try:
+        parsed = urlparse(link)
+        params = parse_qs(parsed.query)
+        if params.get("id"):
+            return params["id"][0]
+    except Exception:
+        pass
     for patron in [
         r'/folders/([a-zA-Z0-9_-]+)',
+        r'/drive/(?:u/\d+/)?folders/([a-zA-Z0-9_-]+)',
         r'/file/d/([a-zA-Z0-9_-]+)',
         r'[?&]id=([a-zA-Z0-9_-]+)',
         r'open\?id=([a-zA-Z0-9_-]+)',
