@@ -16,6 +16,29 @@ from bot.drive_adapter import (
 )
 
 
+def _resolver_entrada(args) -> tuple[str, str]:
+    entrada = args.folder_id or args.url or args.url_o_id
+    if not entrada:
+        raise ValueError("Debes indicar una URL o un folder_id.")
+    folder_id = args.folder_id or extraer_id_carpeta(entrada)
+    if not folder_id:
+        raise ValueError("No se pudo extraer folder_id del valor recibido.")
+    return entrada, folder_id
+
+
+def _imprimir_contexto_prueba(url_original: str, folder_id: str, cuenta: str, cred_info: dict) -> None:
+    print("\nContexto de prueba:")
+    print(f"URL original     : {url_original}")
+    print(f"folder_id probado: {folder_id}")
+    print(f"cuenta autenticada: {cuenta}")
+    print(f"ruta JSON        : {cred_info.get('ruta')}")
+
+
+def _parece_404_drive(exc: Exception) -> bool:
+    texto = str(exc).lower()
+    return "404" in texto or "file not found" in texto
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -23,12 +46,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Diagnostica el listado real de archivos de un portafolio Drive."
     )
-    parser.add_argument("url_o_id", help="URL de Google Drive o folder_id del portafolio")
+    parser.add_argument(
+        "url_o_id",
+        nargs="?",
+        help="URL de Google Drive o folder_id del portafolio",
+    )
+    parser.add_argument("--url", help="URL de Google Drive del portafolio")
+    parser.add_argument("--folder-id", help="folder_id puro de Google Drive")
     args = parser.parse_args()
 
-    folder_id = extraer_id_carpeta(args.url_o_id)
-    if not folder_id:
-        print("No se pudo extraer folder_id del valor recibido.")
+    try:
+        url_original, folder_id = _resolver_entrada(args)
+    except ValueError as exc:
+        print(exc)
         return 2
 
     cred_info = obtener_info_credenciales_drive()
@@ -54,6 +84,8 @@ def main() -> int:
     print(f"project_id   : {cred_info.get('project_id')}")
     if esperado:
         print(f"esperado     : {esperado} [{EXPECTED_CLIENT_EMAIL_ENV}]")
+
+    _imprimir_contexto_prueba(url_original, folder_id, cuenta, cred_info)
 
     try:
         inspeccion = inspeccionar_carpeta_service(service, folder_id)
@@ -91,12 +123,21 @@ def main() -> int:
             service,
             folder_id,
             debug=True,
-            link_original=args.url_o_id,
+            link_original=url_original,
         )
     except Exception as exc:
         print(f"Error Drive: {exc}")
-        print(f"La cuenta autenticada es {cuenta} y no pudo leer el folder {folder_id}.")
-        print("Comparte la carpeta exacta con ese client_email o corrige la ruta del JSON activo.")
+        if _parece_404_drive(exc):
+            print("\nDiagnóstico accionable:")
+            print(f"La cuenta autenticada es {cuenta}.")
+            print(f"El folder_id probado es {folder_id}.")
+            print(
+                "Esto suele significar que el ID no corresponde a la carpeta compartida "
+                "o que esa carpeta exacta no fue compartida con esta cuenta."
+            )
+        else:
+            print(f"La cuenta autenticada es {cuenta} y no pudo leer el folder {folder_id}.")
+            print("Comparte la carpeta exacta con ese client_email o corrige la ruta del JSON activo.")
         return 1
 
     print("\nResumen:")
