@@ -10,6 +10,7 @@ import re
 import unicodedata
 from urllib.parse import unquote, urlparse, parse_qs
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
 
 
@@ -96,12 +97,66 @@ FOLDER_MIME = "application/vnd.google-apps.folder"
 SHORTCUT_MIME = "application/vnd.google-apps.shortcut"
 
 
+class DriveAccessError(RuntimeError):
+    pass
+
+
+def _diagnosticar_error_drive(exc: Exception) -> str:
+    if isinstance(exc, HttpError):
+        status = getattr(exc.resp, "status", None)
+        reason = ""
+        try:
+            reason = getattr(exc.resp, "reason", "") or ""
+        except Exception:
+            reason = ""
+        if status == 404:
+            return (
+                "folder inexistente o sin permiso para la cuenta autenticada "
+                "(Google Drive devuelve 404 en ambos casos)"
+            )
+        if status == 403:
+            return "acceso denegado para la cuenta autenticada"
+        return f"error HTTP Drive {status or '?'} {reason}".strip()
+    return type(exc).__name__
+
+
 def _drive_get_metadata(service, file_id: str) -> dict:
     return service.files().get(
         fileId=file_id,
-        fields="id, name, mimeType",
+        fields="id, name, mimeType, shortcutDetails",
         supportsAllDrives=True,
     ).execute()
+
+
+def _resolver_folder_raiz(service, folder_id: str, debug: bool = False) -> tuple[str, dict]:
+    meta = _drive_get_metadata(service, folder_id)
+    mime = meta.get("mimeType")
+    if debug:
+        print(f"      📁 carpeta raíz   : {meta.get('name')} [{mime}]")
+    if mime == SHORTCUT_MIME:
+        details = meta.get("shortcutDetails") or {}
+        target_id = details.get("targetId")
+        target_mime = details.get("targetMimeType")
+        if debug:
+            print(f"      🔀 raíz es shortcut: target_id={target_id} [{target_mime}]")
+        if target_mime != FOLDER_MIME or not target_id:
+            raise DriveAccessError(
+                f"El folder_id {folder_id} apunta a un shortcut que no resuelve "
+                f"a carpeta. targetMimeType={target_mime or '(vacío)'}"
+            )
+        target_meta = _drive_get_metadata(service, target_id)
+        if debug:
+            print(
+                f"      🔀 target carpeta : {target_meta.get('name')} "
+                f"[{target_meta.get('mimeType')}]"
+            )
+            print(f"      🔀 folder_id efectivo: {target_id}")
+        return target_id, target_meta
+    if mime != FOLDER_MIME:
+        raise DriveAccessError(
+            f"El folder_id {folder_id} no apunta a una carpeta Drive. mimeType={mime}"
+        )
+    return folder_id, meta
 
 
 def _listar_hijos(service, folder_id: str) -> list[dict]:
@@ -129,6 +184,28 @@ def _listar_hijos(service, folder_id: str) -> list[dict]:
     return hijos
 
 
+def inspeccionar_carpeta_service(service, folder_id: str) -> dict:
+    """
+    Diagnóstico liviano de una carpeta Drive: metadata raíz, resolución de
+    shortcut si aplica, e hijos directos del folder efectivo.
+    """
+    try:
+        folder_id_efectivo, meta = _resolver_folder_raiz(service, folder_id, debug=False)
+        hijos = _listar_hijos(service, folder_id_efectivo)
+    except Exception as e:
+        diagnostico = _diagnosticar_error_drive(e)
+        raise DriveAccessError(
+            f"No se puede inspeccionar la carpeta raíz Drive {folder_id}: {diagnostico}. "
+            f"Detalle: {e}"
+        ) from e
+    return {
+        "folder_id_original": folder_id,
+        "folder_id_efectivo": folder_id_efectivo,
+        "metadata": meta,
+        "hijos": hijos,
+    }
+
+
 def _es_carpeta_o_shortcut_carpeta(item: dict) -> bool:
     if item.get("mimeType") == FOLDER_MIME:
         return True
@@ -150,6 +227,7 @@ def _listar_con_info(
     folder_path: str = "",
     debug: bool = False,
     _visitadas: set[str] | None = None,
+    strict: bool = True,
 ) -> list[dict]:
     """
     Lista recursivamente todos los archivos de una carpeta Drive.
@@ -197,6 +275,7 @@ def _listar_con_info(
                         sub_path,
                         debug=debug,
                         _visitadas=_visitadas,
+                        strict=strict,
                     )
                 )
             else:
@@ -213,7 +292,11 @@ def _listar_con_info(
 
     except Exception as e:
         ruta = folder_path or "(raíz)"
-        print(f"   ❌ Error al listar carpeta Drive {folder_id} /{ruta}: {e}")
+        detalle = _diagnosticar_error_drive(e)
+        mensaje = f"Error al listar carpeta Drive {folder_id} /{ruta}: {detalle}. Detalle: {e}"
+        if strict:
+            raise DriveAccessError(mensaje) from e
+        print(f"   ❌ {mensaje}")
 
     return resultado
 
@@ -242,22 +325,27 @@ def listar_archivos_con_info_service(
     Versión pública para service account.
     Usar desde main.py donde el service ya está conectado con cuenta de servicio.
     """
-    meta = None
-    try:
-        meta = _drive_get_metadata(service, folder_id)
-    except Exception as e:
-        raise RuntimeError(
-            f"No se puede leer la carpeta raíz Drive {folder_id}. "
-            "Verifica que el link sea una carpeta y que esté compartida con "
-            f"la cuenta de servicio. Detalle: {e}"
-        ) from e
-
     if debug:
         if link_original:
             print(f"      🔗 URL portafolio : {link_original}")
         print(f"      🔑 folder_id      : {folder_id}")
-        print(f"      📁 carpeta raíz   : {meta.get('name')} [{meta.get('mimeType')}]")
-    archivos = _listar_con_info(service, folder_id, debug=debug)
+
+    meta = None
+    try:
+        folder_id_efectivo, meta = _resolver_folder_raiz(service, folder_id, debug=debug)
+    except Exception as e:
+        diagnostico = _diagnosticar_error_drive(e)
+        raise DriveAccessError(
+            f"No se puede leer la carpeta raíz Drive {folder_id}: {diagnostico}. "
+            "Verifica que el link sea la carpeta exacta y que esté compartida "
+            f"con la cuenta autenticada por el bot. Detalle: {e}"
+        ) from e
+
+    if debug:
+        if folder_id_efectivo != folder_id:
+            print(f"      🔑 folder efectivo: {folder_id_efectivo}")
+        print(f"      ✅ files.get raíz : OK")
+    archivos = _listar_con_info(service, folder_id_efectivo, debug=debug, strict=True)
     if debug:
         print(f"      📄 archivos antes del matching: {len(archivos)}")
         for archivo in archivos[:30]:

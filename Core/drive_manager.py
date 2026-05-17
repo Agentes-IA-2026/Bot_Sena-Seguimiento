@@ -1,20 +1,111 @@
 import os
 import re
+import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+
+DEFAULT_CREDENTIALS_PATH = 'assets/credenciales.json'
+DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+FOLDER_MIME = 'application/vnd.google-apps.folder'
+SHORTCUT_MIME = 'application/vnd.google-apps.shortcut'
+
+
+def _resolver_ruta_credenciales_drive() -> tuple[str, str]:
+    """
+    Fuente única y explícita para credenciales Drive.
+    Prioridad:
+      1. BOT_SENA_DRIVE_CREDENTIALS
+      2. GOOGLE_APPLICATION_CREDENTIALS
+      3. assets/credenciales.json
+    """
+    candidatos = [
+        ("BOT_SENA_DRIVE_CREDENTIALS", os.environ.get("BOT_SENA_DRIVE_CREDENTIALS")),
+        ("GOOGLE_APPLICATION_CREDENTIALS", os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")),
+        ("default", DEFAULT_CREDENTIALS_PATH),
+    ]
+    for fuente, ruta in candidatos:
+        if ruta:
+            return fuente, os.path.abspath(os.path.expanduser(ruta))
+    return "default", os.path.abspath(DEFAULT_CREDENTIALS_PATH)
+
+
+def obtener_info_credenciales_drive() -> dict:
+    fuente, ruta = _resolver_ruta_credenciales_drive()
+    info = {
+        "fuente": fuente,
+        "ruta": ruta,
+        "existe": os.path.exists(ruta),
+        "client_email": None,
+        "project_id": None,
+        "type": None,
+    }
+    if not info["existe"]:
+        return info
+    try:
+        with open(ruta, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        info["client_email"] = data.get("client_email")
+        info["project_id"] = data.get("project_id")
+        info["type"] = data.get("type")
+    except Exception as exc:
+        info["error"] = str(exc)
+    return info
+
+
+def imprimir_info_credenciales_drive(prefijo: str = "   ") -> dict:
+    info = obtener_info_credenciales_drive()
+    print(f"{prefijo}🔐 Credenciales Drive")
+    print(f"{prefijo}   fuente       : {info['fuente']}")
+    print(f"{prefijo}   ruta JSON    : {info['ruta']}")
+    print(f"{prefijo}   existe       : {info['existe']}")
+    print(f"{prefijo}   client_email : {info.get('client_email') or '(no disponible)'}")
+    print(f"{prefijo}   project_id   : {info.get('project_id') or '(no disponible)'}")
+    esperado = os.environ.get("BOT_SENA_EXPECTED_SERVICE_ACCOUNT") or os.environ.get(
+        "DRIVE_EXPECTED_SERVICE_ACCOUNT_EMAIL"
+    )
+    if esperado:
+        coincide = (info.get("client_email") or "").lower() == esperado.lower()
+        estado = "OK" if coincide else "NO COINCIDE"
+        print(f"{prefijo}   esperado     : {esperado} [{estado}]")
+    if info.get("error"):
+        print(f"{prefijo}   error JSON   : {info['error']}")
+    return info
+
+
+def conectar_drive(debug: bool = True):
+    """Conecta con la API usando la fuente única de credenciales Drive."""
+    info = imprimir_info_credenciales_drive() if debug else obtener_info_credenciales_drive()
+    ruta_json = info["ruta"]
  
- 
-def conectar_drive():
-    """Conecta con la API usando el JSON de FaroClick"""
-    RUTA_JSON = 'assets/credenciales.json'
-    SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
- 
-    if not os.path.exists(RUTA_JSON):
-        print(f"❌ No se encontró el archivo: {RUTA_JSON}")
+    if not info["existe"]:
+        print(f"❌ No se encontró el archivo de credenciales Drive: {ruta_json}")
+        return None
+    if info.get("type") and info.get("type") != "service_account":
+        print(f"❌ El JSON Drive no es service_account: type={info.get('type')}")
         return None
  
-    creds = service_account.Credentials.from_service_account_file(RUTA_JSON, scopes=SCOPES)
+    creds = service_account.Credentials.from_service_account_file(ruta_json, scopes=DRIVE_SCOPES)
     return build('drive', 'v3', credentials=creds)
+
+
+def _resolver_folder_real(service, folder_id: str) -> str:
+    meta = service.files().get(
+        fileId=folder_id,
+        fields="id, name, mimeType, shortcutDetails",
+        supportsAllDrives=True,
+    ).execute()
+    mime = meta.get('mimeType')
+    if mime == SHORTCUT_MIME:
+        details = meta.get('shortcutDetails') or {}
+        target_id = details.get('targetId')
+        target_mime = details.get('targetMimeType')
+        if target_id and target_mime == FOLDER_MIME:
+            print(f"   🔀 Folder raíz es shortcut → {target_id}")
+            return target_id
+    if mime != FOLDER_MIME:
+        raise RuntimeError(f"El id Drive no es carpeta. mimeType={mime}")
+    return folder_id
  
  
 def _normalizar(texto: str) -> str:
@@ -137,7 +228,7 @@ def _coincide(nombre_evidencia: str, nombre_drive: str, debug: bool = False) -> 
     return False
  
  
-def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
+def _listar_archivos_recursivo(service, folder_id: str, strict: bool = True) -> list[str]:
     """
     Lista TODOS los archivos dentro de una carpeta y sus subcarpetas.
     Retorna una lista de nombres de archivo originales.
@@ -147,6 +238,7 @@ def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
     nombres = []
  
     try:
+        folder_id = _resolver_folder_real(service, folder_id)
         page_token = None
         while True:
             results = service.files().list(
@@ -169,7 +261,7 @@ def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
                 )
                 if is_folder or is_folder_shortcut:
                     target_id = item.get('shortcutDetails', {}).get('targetId') or item['id']
-                    sub = _listar_archivos_recursivo(service, target_id)
+                    sub = _listar_archivos_recursivo(service, target_id, strict=strict)
                     nombres.extend(sub)
                 else:
                     nombres.append(item['name'])
@@ -179,7 +271,10 @@ def _listar_archivos_recursivo(service, folder_id: str) -> list[str]:
                 break
  
     except Exception as e:
-        print(f"   ⚠️ Error al listar carpeta {folder_id}: {e}")
+        mensaje = f"Error al listar carpeta Drive {folder_id}: {e}"
+        if strict:
+            raise RuntimeError(mensaje) from e
+        print(f"   ⚠️ {mensaje}")
  
     return nombres
  
