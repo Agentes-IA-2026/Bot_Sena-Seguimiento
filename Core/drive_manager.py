@@ -7,6 +7,7 @@ from googleapiclient.discovery import build
 
 DEFAULT_CREDENTIALS_PATH = 'assets/credenciales.json'
 DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+EXPECTED_CLIENT_EMAIL_ENV = "BOT_SENA_EXPECTED_DRIVE_CLIENT_EMAIL"
 FOLDER_MIME = 'application/vnd.google-apps.folder'
 SHORTCUT_MIME = 'application/vnd.google-apps.shortcut'
 
@@ -39,6 +40,7 @@ def obtener_info_credenciales_drive() -> dict:
         "client_email": None,
         "project_id": None,
         "type": None,
+        "expected_client_email": os.environ.get(EXPECTED_CLIENT_EMAIL_ENV),
     }
     if not info["existe"]:
         return info
@@ -53,6 +55,33 @@ def obtener_info_credenciales_drive() -> dict:
     return info
 
 
+def validar_info_credenciales_drive(info: dict) -> None:
+    """Valida el JSON activo sin exponer secretos."""
+    ruta = info.get("ruta")
+    if not info.get("existe"):
+        raise RuntimeError(f"No se encontró el archivo de credenciales Drive: {ruta}")
+    if info.get("error"):
+        raise RuntimeError(f"No se pudo leer el JSON de credenciales Drive {ruta}: {info['error']}")
+    if info.get("type") != "service_account":
+        raise RuntimeError(
+            f"El JSON Drive debe ser service_account. "
+            f"Ruta={ruta}, type={info.get('type') or '(vacío)'}"
+        )
+    if not info.get("client_email"):
+        raise RuntimeError(f"El JSON Drive no tiene client_email. Ruta={ruta}")
+    if not info.get("project_id"):
+        raise RuntimeError(f"El JSON Drive no tiene project_id. Ruta={ruta}")
+
+    esperado = info.get("expected_client_email")
+    if esperado and info["client_email"].lower() != esperado.lower():
+        raise RuntimeError(
+            "La credencial Drive activa no coincide con la cuenta esperada. "
+            f"Esperada={esperado}; activa={info['client_email']}; "
+            f"fuente={info['fuente']}; ruta={ruta}. "
+            f"Corrige {EXPECTED_CLIENT_EMAIL_ENV} o la ruta de credenciales."
+        )
+
+
 def imprimir_info_credenciales_drive(prefijo: str = "   ") -> dict:
     info = obtener_info_credenciales_drive()
     print(f"{prefijo}🔐 Credenciales Drive")
@@ -61,13 +90,11 @@ def imprimir_info_credenciales_drive(prefijo: str = "   ") -> dict:
     print(f"{prefijo}   existe       : {info['existe']}")
     print(f"{prefijo}   client_email : {info.get('client_email') or '(no disponible)'}")
     print(f"{prefijo}   project_id   : {info.get('project_id') or '(no disponible)'}")
-    esperado = os.environ.get("BOT_SENA_EXPECTED_SERVICE_ACCOUNT") or os.environ.get(
-        "DRIVE_EXPECTED_SERVICE_ACCOUNT_EMAIL"
-    )
+    esperado = info.get("expected_client_email")
     if esperado:
         coincide = (info.get("client_email") or "").lower() == esperado.lower()
         estado = "OK" if coincide else "NO COINCIDE"
-        print(f"{prefijo}   esperado     : {esperado} [{estado}]")
+        print(f"{prefijo}   esperado     : {esperado} [{estado}] ({EXPECTED_CLIENT_EMAIL_ENV})")
     if info.get("error"):
         print(f"{prefijo}   error JSON   : {info['error']}")
     return info
@@ -77,13 +104,7 @@ def conectar_drive(debug: bool = True):
     """Conecta con la API usando la fuente única de credenciales Drive."""
     info = imprimir_info_credenciales_drive() if debug else obtener_info_credenciales_drive()
     ruta_json = info["ruta"]
- 
-    if not info["existe"]:
-        print(f"❌ No se encontró el archivo de credenciales Drive: {ruta_json}")
-        return None
-    if info.get("type") and info.get("type") != "service_account":
-        print(f"❌ El JSON Drive no es service_account: type={info.get('type')}")
-        return None
+    validar_info_credenciales_drive(info)
  
     creds = service_account.Credentials.from_service_account_file(ruta_json, scopes=DRIVE_SCOPES)
     return build('drive', 'v3', credentials=creds)

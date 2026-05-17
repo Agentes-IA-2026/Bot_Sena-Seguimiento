@@ -1,7 +1,12 @@
 import argparse
 import sys
 
-from Core.drive_manager import conectar_drive, obtener_info_credenciales_drive
+from Core.drive_manager import (
+    EXPECTED_CLIENT_EMAIL_ENV,
+    conectar_drive,
+    obtener_info_credenciales_drive,
+    validar_info_credenciales_drive,
+)
 from bot.drive_adapter import (
     FOLDER_MIME,
     SHORTCUT_MIME,
@@ -26,11 +31,29 @@ def main() -> int:
         print("No se pudo extraer folder_id del valor recibido.")
         return 2
 
-    service = conectar_drive()
-    if service is None:
-        return 2
     cred_info = obtener_info_credenciales_drive()
+    try:
+        validar_info_credenciales_drive(cred_info)
+    except Exception as exc:
+        print(f"Error credenciales Drive: {exc}")
+        return 2
+
+    try:
+        service = conectar_drive(debug=False)
+    except Exception as exc:
+        print(f"Error autenticando Drive: {exc}")
+        return 2
+
     cuenta = cred_info.get("client_email") or "(cuenta no disponible)"
+    esperado = cred_info.get("expected_client_email")
+
+    print("\nCuenta Drive autenticada:")
+    print(f"fuente       : {cred_info.get('fuente')}")
+    print(f"ruta JSON    : {cred_info.get('ruta')}")
+    print(f"client_email : {cuenta}")
+    print(f"project_id   : {cred_info.get('project_id')}")
+    if esperado:
+        print(f"esperado     : {esperado} [{EXPECTED_CLIENT_EMAIL_ENV}]")
 
     try:
         inspeccion = inspeccionar_carpeta_service(service, folder_id)
